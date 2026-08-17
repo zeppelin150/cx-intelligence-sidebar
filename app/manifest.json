@@ -1,0 +1,50 @@
+{
+  "name": "CX Client Data Sidebar",
+  "author": { "name": "Alma CX Platform", "email": "cx-platform@example.alma" },
+  "version": "3.10.0",
+  "frameworkVersion": "2.0",
+  "private": true,
+  "location": {
+    "support": {
+      "ticket_sidebar": "assets/index.html",
+      "nav_bar": "assets/home.html"
+    }
+  },
+  "defaultLocale": "en",
+  "translations": { "en": "translations/en.json" },
+  "icon": "icon.png",
+  "domainWhitelist": ["app.asana.com", "slack.com", "api.getguru.com"],
+  "parameters": [
+    { "name": "asana_pat",              "type": "text", "secure": true,     "required": false, "label": "Asana Personal Access Token", "helpText": "Stored server-side by Zendesk and injected into Asana calls via the secure proxy; never visible in the browser. Leave blank for demo sample tasks." },
+    { "name": "asana_workspace_gid",    "type": "text", "required": false,  "label": "Asana workspace GID", "helpText": "Required for live Asana. Leave blank to keep the Asana pane in demo mode." },
+    { "name": "asana_ticket_field_gid", "type": "text", "required": false,  "label": "Asana 'ticket ID' custom-field GID", "helpText": "If set, tasks are matched on this custom field's value = ticket number. If blank, full-text search of task name/description." },
+    { "name": "asana_project_gid",      "type": "text", "required": false,  "label": "Asana request-form project GID", "helpText": "Where tasks created from the Asana > New request sub-tab land. Leave blank to use the project_gid in assets/asana_form_config.json." },
+    { "name": "asana_dedupe_days",      "type": "text", "required": false,  "label": "Duplicate-check window (days)", "helpText": "The Asana > Other requests check and the submit-time duplicate warning look back this many days. Blank = 14." },
+    { "name": "slack_bot_token",        "type": "text", "secure": true,     "required": false, "label": "Slack bot token (xoxb-…)", "helpText": "Needs chat:write + channels:history scopes and the bot invited to the channel. Optional extras: channels:read (+ groups:read) lights up the Channels sub-tab, bookmarks:read lets Workflows auto-discover links bookmarked in channels — without them those sub-tabs degrade gracefully. Injected server-side via the secure proxy; never visible in the browser." },
+    { "name": "slack_channel_id",       "type": "text", "required": false,  "label": "Slack channel ID (C…)", "helpText": "The channel the ticket-sidebar Slack tab posts to. Leave blank to keep it in demo mode." },
+    { "name": "slack_workflow_links",   "type": "text", "required": false,  "label": "Slack workflows (links)", "helpText": "Workflow link triggers shown in the Slack > Workflows sub-tab, 'Label|https://slack.com/shortcuts/…' entries separated by commas or newlines. The tab also auto-lists workflow links bookmarked in the posting/home channels (needs bookmarks:read). Launch opens the workflow's form in Slack; no ticket data is sent." },
+    { "name": "slack_search_token",     "type": "text", "secure": true,     "required": false, "label": "Slack search token (user, optional)", "helpText": "A user token with search:read for the Workflows tab's request search (Slack's search API rejects bot tokens). Blank = search falls back to scanning recent history of the scoped channels. Injected server-side via the secure proxy; never visible in the browser." },
+    { "name": "asana_team_field_gid",   "type": "text", "required": false,  "label": "Asana 'assigned team' custom-field GID", "helpText": "The home view groups Asana tasks by this enum field's value (Sales / Credentialing / Eligibility / Claims / Accounting…)." },
+    { "name": "slack_channel_ids",      "type": "text", "required": false,  "label": "Slack channels for the home view", "helpText": "Comma-separated channel IDs the bot is a member of, optionally labeled: 'C123:cx commons, C456:cx<>cat crossfunctional, C789:prod<>eng'. The home Slack tab scans these for threads tagged with your ticket ids." },
+    { "name": "guru_auth",              "type": "text", "secure": true,     "required": false, "label": "Guru API auth (Basic)", "helpText": "Base64 of 'username:user-token' from Guru (User token = read/write). Injected server-side via the secure proxy; never visible in the browser. Generate: echo -n 'user:token' | base64." },
+    { "name": "guru_reason_field",      "type": "text", "required": false,  "label": "Zendesk 'ticket reason code' field ID", "helpText": "The custom field whose value maps to a Guru card's tag. Set this (with guru_auth) to switch the Guru tab live; blank shows a sample card." },
+    { "name": "guru_suggest_subject",   "type": "checkbox", "label": "Guru: use ticket subject for suggestions", "default": false, "helpText": "When enabled, the ticket's subject line is also sent to Guru as a search query to improve the Suggested tab. Off by default: the subject is requester-written text that would leave Zendesk." },
+    { "name": "guru_suggest_tags",      "type": "checkbox", "label": "Guru: use ticket tags for suggestions", "default": false, "helpText": "When enabled, up to 5 ticket tags are sent to Guru as a search query to improve the Suggested tab. Off by default so the tag vocabulary doesn't leave Zendesk; with both toggles off only the reason-code value is sent (same as before)." },
+    { "name": "guru_default_collection","type": "text", "required": false,  "label": "Guru default collection ID (optional)", "helpText": "If set, Suggested and Search rank cards from this collection first, and Search preselects it as the filter." },
+    { "name": "guru_ai_answers",        "type": "checkbox", "label": "Guru: AI answers (Ask Guru)", "default": true, "helpText": "Shows an AI answer with cited cards at the top of Suggested, seeded from the ticket's reason code (POST /v1/answers). Needs Guru AI enabled on your plan — if it isn't, the panel hides itself automatically. No new data leaves Zendesk beyond the reason code already sent to Guru search (subject only when 'use ticket subject' is on)." },
+    { "name": "guru_agent_id",          "type": "text", "required": false,  "label": "Guru Knowledge Agent ID (optional)", "helpText": "Scopes Ask-Guru answers to a specific Knowledge Agent. Leave blank to use the workspace default. Find IDs via GET /v1/assistants." },
+    { "name": "guru_debug",             "type": "checkbox", "label": "Guru: verbose debug logging (console + window.__guruDebug)", "default": false, "helpText": "Troubleshooting only — leave OFF in normal use. When on (and Guru is in LIVE mode, i.e. guru_reason_field is set), prints each Guru request's method/path/subtype and the raw JSON response (status + error body on failure) to the browser console and keeps the last 50 entries on window.__guruDebug. Nothing prints in demo/sample mode. Responses (and search terms) can contain member free-text/PHI; the buffer lives only in the agent's browser session. The Guru API credential is never logged." },
+    { "name": "aht_field_map",          "type": "text", "required": false,  "label": "Handle-time → ticket field map", "helpText": "Maps each app feature to a numeric Zendesk custom-field ID so Explore can report time-per-feature. Format: 'summary:25000,context:25001,asana_tasks:25002,asana_create:25003,asana_search:25004,slack:25005,guru:25006' — 'summary' is the landing tab, 'context' is the Account tab (key kept for existing installs). Digits only, no commas inside IDs. Invalid entries are skipped with a console warning. Blank = track only, write nothing." },
+    { "name": "aht_endpoint",           "type": "text", "required": false,  "label": "Handle-time warehouse endpoint (optional)", "helpText": "URL of a collector that receives {ticket_id, agent, at, seq, idempotency_key, seconds:{feature:delta}} POSTs via the secure proxy. Also add its domain to domainWhitelist. Blank = no warehouse stream." },
+    { "name": "asana_status_buttons", "type": "checkbox", "label": "Asana: Show ticket status buttons (On-hold / Pending)", "default": false, "helpText": "When enabled, each Asana task card shows On-hold and Pending buttons so agents can update the linked Zendesk ticket status directly from the Asana section." },
+    { "name": "show_summary",        "type": "checkbox", "label": "Show: Summary (local ticket digest)",   "default": true },
+    { "name": "triage_field_map",    "type": "text",     "label": "Intelligent triage field IDs (optional; intent:ID,sentiment:ID,language:ID — blank auto-detects by field title)", "required": false },
+    { "name": "show_user_tags",      "type": "checkbox", "label": "Show: User Tags",                       "default": true },
+    { "name": "show_csat6",          "type": "checkbox", "label": "Show: CSAT (Last 6)",                   "default": true },
+    { "name": "show_csat30",         "type": "checkbox", "label": "Show: CSAT (Last 30 Days)",             "default": true },
+    { "name": "show_profile_age",    "type": "checkbox", "label": "Show: Profile Age",                     "default": true },
+    { "name": "show_contacts_month", "type": "checkbox", "label": "Show: Number of Contacts (This Month)", "default": true },
+    { "name": "show_sentiment",      "type": "checkbox", "label": "Show: Sentiment (Last 3)",              "default": true },
+    { "name": "show_latest_tickets", "type": "checkbox", "label": "Show: Latest 3 Tickets",                "default": true }
+  ]
+}

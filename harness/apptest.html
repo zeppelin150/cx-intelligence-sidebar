@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <title>AHT harness — app under test</title>
+  <!-- Mock ZAF must be in place before app.js runs -->
+  <script src="./mock-zaf.js"></script>
+  <link rel="stylesheet" href="../v2.9.2/cx-client-data-sidebar-v2.9.0/assets/app.css?v=391" />
+</head>
+<body>
+  <script>
+    // Pull the real index.html body so the DOM under test is the shipped DOM
+    // (script tags inside innerHTML don't execute, so we control app.js load).
+    (async function () {
+      var res = await fetch("../v2.9.2/cx-client-data-sidebar-v2.9.0/assets/index.html?v=391", { cache: "no-cache" });
+      var doc = new DOMParser().parseFromString(await res.text(), "text/html");
+      document.body.insertAdjacentHTML("afterbegin", doc.body.innerHTML);
+      var s = document.createElement("script");
+      s.src = "../v2.9.2/cx-client-data-sidebar-v2.9.0/assets/app.js?v=391";
+      s.onload = function () { window.__appLoaded = true; };
+      document.body.appendChild(s);
+    })();
+  </script>
+</body>
+</html>

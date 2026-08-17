@@ -1,0 +1,311 @@
+﻿<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Client context</title>
+  <!-- Zendesk-hosted ZAF app. Reads ticket context + a custom object via ZAF. -->
+  <script src="https://static.zdassets.com/zendesk_app_framework_sdk/2.0/zaf_sdk.min.js"></script>
+  <link rel="stylesheet" href="./app.css?v=3100" />
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- Asana comment notification toast (auto-dismisses, links to home view) -->
+    <div id="comment-toast" class="comment-toast" hidden>
+      <span class="comment-toast-msg" id="comment-toast-msg"></span>
+      <button class="comment-toast-link" id="comment-toast-link" type="button">View in Asana tab â†—</button>
+      <button class="comment-toast-close" id="comment-toast-close" type="button" aria-label="Dismiss">âœ•</button>
+    </div>
+
+    <!-- Top-level tabs: Summary (member + ticket digest), Account (the warehouse
+         client context), Asana (linked tasks + request form + dedupe), Slack, Guru.
+         data-pane="context" keeps its internal key so existing installs'
+         aht_field_map / visibility settings stay valid â€” only the label changed. -->
+    <div class="tabs" id="tabs">
+      <button class="tab active" type="button" data-pane="summary">Summary</button>
+      <button class="tab" type="button" data-pane="context">Account</button>
+      <button class="tab" type="button" data-pane="asana">Asana</button>
+      <button class="tab" type="button" data-pane="slack">Slack</button>
+      <button class="tab" type="button" data-pane="guru">Guru</button>
+    </div>
+
+    <!-- Demo-only variant toggle (hidden in production). Global â€” the variant
+         drives the Summary, Account and Asana panes alike. -->
+    <div id="demo-toggle" class="demo-toggle" hidden>
+      <span class="demo-label">Demo</span>
+      <button class="demo-seg" type="button" data-variant="client">Client</button>
+      <button class="demo-seg" type="button" data-variant="provider">Provider</button>
+    </div>
+
+    <!-- Summary pane (landing): who the member is + the local ticket digest -->
+    <div class="pane active" id="pane-summary">
+
+    <!-- Profile / ops (retained features, via ZAFClient) -->
+    <div class="card collapsible" id="card-profile" data-collapse-key="profile">
+      <div class="profile">
+        <div class="avatar" id="pf-avatar">Â·Â·</div>
+        <div class="who">
+          <div class="name" id="pf-name">Loadingâ€¦</div>
+          <div class="email" id="pf-email"></div>
+        </div>
+        <div class="head-actions">
+          <button class="chevron" type="button" aria-label="Toggle section" aria-expanded="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></button>
+          <span class="type-badge" id="pf-type" hidden></span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn icon" id="btn-refresh" type="button" title="Refresh account data & summary" aria-label="Refresh account data and summary"><span class="rfi">â†»</span></button>
+            <button class="btn icon" id="btn-theme" type="button" title="Toggle theme" aria-label="Toggle theme">â—</button>
+            <button class="btn" id="btn-open" type="button" title="Open requester in Support">Open</button>
+          </div>
+        </div>
+      </div>
+      <div class="kv-grid collapse-body">
+        <div class="kv"><div class="k">Organization</div><div class="v" id="m-org">â€”</div></div>
+        <div class="kv"><div class="k">Role</div><div class="v" id="m-role">â€”</div></div>
+        <div class="kv"><div class="k">Phone</div><div class="v" id="m-phone">â€”</div></div>
+        <div class="kv"><div class="k">Last seen</div><div class="v" id="m-lastseen">â€”</div></div>
+        <div class="kv" id="row-age"><div class="k">Profile age</div><div class="v" id="m-age">â€”</div></div>
+        <div class="kv" id="row-contacts"><div class="k">Contacts this month</div><div class="v" id="m-contacts">â€”</div></div>
+        <div class="kv" id="row-sentiment"><div class="k">Sentiment (last 3)</div><div class="v" id="m-sentiment">â€”</div></div>
+        <div class="kv" id="row-csat6"><div class="k">CSAT (last 6)</div><div class="v"><span class="csat-pill" id="m-csat6">â€”</span></div></div>
+        <div class="kv" id="row-csat30"><div class="k">CSAT (30 days)</div><div class="v"><span class="csat-pill" id="m-csat30">â€”</span></div></div>
+        <div class="kv wide" id="row-tags"><div class="k">Tags</div><div class="v"><div class="chips" id="m-tags">â€”</div></div></div>
+      </div>
+    </div>
+
+    <!-- Ticket digest: what the ticket is about, the interaction so far, contact
+         history, and this ticket's Asana/Guru signals â€” computed inside the
+         sidebar from data already in the agent's Zendesk session. The digest
+         itself is never sent to any external service. -->
+    <div class="card collapsible" id="card-summary" data-collapse-key="summary">
+      <div class="section-head">
+        <h2>Summary</h2>
+        <div class="head-right">
+          <span class="sum-flag" title="Computed in this sidebar from Zendesk data. The digest is not sent to any external service.">in-sidebar</span>
+          <button class="chevron" type="button" aria-label="Toggle section" aria-expanded="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></button>
+        </div>
+      </div>
+      <div class="collapse-body" id="summary-body">
+        <div class="skeleton" style="width:85%"></div>
+        <div class="skeleton" style="width:60%; margin-top:8px"></div>
+        <div class="skeleton" style="width:72%; margin-top:8px"></div>
+      </div>
+    </div>
+
+    <!-- Latest tickets (retained, via ZAFClient) â€” the member's interaction history -->
+    <div class="card collapsible" id="card-tickets" data-collapse-key="tickets">
+      <div class="section-head"><h2>Latest tickets</h2><div class="head-right"><button class="chevron" type="button" aria-label="Toggle section" aria-expanded="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></button></div></div>
+      <div class="tickets collapse-body" id="tickets"><div class="skeleton" style="width:100%"></div></div>
+    </div>
+
+    </div><!-- /pane-summary -->
+
+    <!-- Account pane: the client context the resolver wrote to the custom object
+         (eligibility / claims / invoices for clients; credentialing / onboarding
+         for providers), plus its freshness stamp and force-refresh error state. -->
+    <div class="pane" id="pane-context">
+
+    <!-- Visible only when the record contains sample/placeholder data. -->
+    <div class="sample-note" id="sample-note" hidden>Showing sample placeholder data.</div>
+
+    <!-- Client context (from the custom object). Shell paints immediately. -->
+    <div id="context-shell">
+      <div class="card">
+        <div class="section-head"><h2>Eligibility</h2></div>
+        <div class="skeleton" style="width:80%"></div>
+        <div class="skeleton" style="width:60%; margin-top:8px"></div>
+      </div>
+      <div class="card">
+        <div class="section-head"><h2>Claims</h2></div>
+        <div class="skeleton" style="width:90%"></div>
+        <div class="skeleton" style="width:70%; margin-top:8px"></div>
+      </div>
+    </div>
+
+    <div class="card error" id="context-error" hidden>
+      <p id="context-error-msg">Couldnâ€™t load client context.</p>
+      <button class="btn primary" id="btn-retry" type="button">Retry</button>
+    </div>
+
+    <div class="stamp" id="freshness" hidden></div>
+
+    </div><!-- /pane-context -->
+
+    <!-- Asana pane: three sub-tabs â€” Linked tasks (this ticket), New request (the
+         config-driven Asana form), and Other requests (recent tasks for the same
+         client/provider ID â€” the dedupe check). -->
+    <div class="pane" id="pane-asana">
+      <div class="subtabs" id="asana-subtabs">
+        <button class="subtab active" type="button" data-asub="linked">Tasks</button>
+        <button class="subtab" type="button" data-asub="request">Create</button>
+        <button class="subtab" type="button" data-asub="other">Search</button>
+      </div>
+
+      <!-- 1. Linked tasks for this ticket -->
+      <div class="asub active" id="asub-linked">
+        <div class="sample-note" id="asana-sample-note">Showing sample Asana tasks (demo). Add the Asana PAT + workspace GID in the app settings to go live.</div>
+        <div class="section-head asana-head">
+          <h2>Tasks Â· ticket <span id="asana-ticket-id">â€”</span></h2>
+          <span class="count-pill" id="asana-count">0</span>
+        </div>
+        <div id="asana-body"><div class="empty">Loading Asana tasksâ€¦</div></div>
+      </div>
+
+      <!-- 2. New request: the config-driven Asana form (asana_form_config.json) -->
+      <div class="asub" id="asub-request">
+        <div class="sample-note" id="aform-sample-note" hidden>Demo: the form is fully interactive, but submitting creates a sample task only. Add the Asana PAT + workspace GID in the app settings to go live.</div>
+        <div class="section-head asana-head">
+          <h2 id="aform-title">Create request Â· ticket <span id="aform-ticket-id">â€”</span></h2>
+          <a class="aform-source" id="aform-source" href="#" target="_blank" rel="noopener" hidden>Open in Asana â†—</a>
+        </div>
+        <div id="aform-body"><div class="card"><div class="empty">Loading formâ€¦</div></div></div>
+      </div>
+
+      <!-- 3. Other requests: dedupe â€” recent Asana tasks matching the client/provider ID -->
+      <div class="asub" id="asub-other">
+        <div class="section-head asana-head">
+          <h2>Search Â· client / provider</h2>
+          <span class="count-pill" id="dedupe-count">0</span>
+        </div>
+        <div class="dedupe-controls">
+          <input class="dedupe-input" id="dedupe-client" type="text" placeholder="Client ID" aria-label="Client ID">
+          <input class="dedupe-input" id="dedupe-provider" type="text" placeholder="Provider ID" aria-label="Provider ID">
+          <button class="btn" id="dedupe-search" type="button">Search</button>
+        </div>
+        <div class="dedupe-hint" id="dedupe-hint">Open Asana requests from the last 14 days that match the client or provider ID.</div>
+        <div id="dedupe-body"><div class="card"><div class="empty">Enter a client or provider ID, or open Create to auto-fill from the form.</div></div></div>
+      </div>
+
+      <!-- Duplicate-warning toast (shown at submit when recent matches exist) -->
+      <div class="toast" id="dedupe-toast" hidden>
+        <div class="toast-msg" id="dedupe-toast-msg"></div>
+        <div class="toast-actions">
+          <button class="btn" id="dedupe-toast-review" type="button">Review</button>
+          <button class="btn" id="dedupe-toast-cancel" type="button">Cancel</button>
+          <button class="btn primary" id="dedupe-toast-go" type="button">Submit anyway</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slack pane: three sub-views â€” Post (structured request into the team
+         channel + follow its thread), Channels (workspace directory with
+         per-agent favorites), Workflows (launchable form-workflow links from
+         settings + channel bookmarks). -->
+    <div class="pane" id="pane-slack">
+      <div class="sample-note" id="slack-sample-note" hidden>Demo: posts stay in this sidebar. Add the Slack bot token + channel ID in the app settings to go live.</div>
+      <div class="subtabs" id="slack-subtabs">
+        <button class="subtab active" type="button" data-ssub="post">Post</button>
+        <button class="subtab" type="button" data-ssub="channels">Channels</button>
+        <button class="subtab" type="button" data-ssub="workflows">Workflows</button>
+      </div>
+
+      <!-- 1. Post to the team channel + follow the thread -->
+      <div class="ssub active" id="ssub-post">
+        <div id="slack-body"><div class="card"><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:45%;margin-top:8px"></div></div></div>
+      </div>
+
+      <!-- 2. Channels: relevant set by default (favorites + memberships +
+           configured); the full directory only via search -->
+      <div class="ssub" id="ssub-channels">
+        <div class="section-head asana-head">
+          <h2>Channels</h2>
+          <span class="count-pill" id="slack-ch-count">0</span>
+        </div>
+        <div class="guru-search-row">
+          <input class="dedupe-input guru-search-input" id="slack-ch-search" type="search" placeholder="Search all channelsâ€¦" aria-label="Search all channels">
+        </div>
+        <div id="slack-channels-body"><div class="card"><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:45%;margin-top:8px"></div></div></div>
+      </div>
+
+      <!-- 3. Workflows: launchable form-workflow links (settings + channel
+           bookmarks), then the requests that reference THIS ticket, with an
+           open/resolved state (âœ… reaction or âœ…/"resolved" thread reply). -->
+      <div class="ssub" id="ssub-workflows">
+        <div class="section-head asana-head">
+          <h2>Start a workflow</h2>
+          <span class="count-pill" id="slack-wf-count">0</span>
+        </div>
+        <div id="slack-wf-body"><div class="card"><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:45%;margin-top:8px"></div></div></div>
+
+        <div class="section-head asana-head" style="margin-top:14px">
+          <h2>Requests Â· ticket <span id="slack-req-ticket">â€”</span></h2>
+          <span class="count-pill" id="slack-req-count">0 open</span>
+        </div>
+        <div class="guru-search-row">
+          <input class="dedupe-input guru-search-input" id="slack-req-search" type="search" placeholder="Search past requestsâ€¦" aria-label="Search past requests">
+        </div>
+        <div class="dedupe-hint">Resolved = âœ… reaction on the Slack message, or a thread reply starting with âœ…/â€œresolvedâ€. Replies sync every 30s while this tab is open.</div>
+        <div id="slack-req-body"><div class="card"><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:45%;margin-top:8px"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Guru pane: four sub-views â€” Suggested (ticket-driven), Search, Browse
+         (collections â†’ folders â†’ cards), Recents (+ locally pinned cards).
+         Cards open in the pop-out overlay for reading, verifying, and commenting. -->
+    <div class="pane" id="pane-guru">
+      <div class="sample-note" id="guru-sample-note" hidden>Showing sample Guru knowledge (demo). Add the Guru token + reason-code field in the app settings to go live.</div>
+      <div class="subtabs" id="guru-subtabs">
+        <button class="subtab active" type="button" data-gsub="suggested">Suggested</button>
+        <button class="subtab" type="button" data-gsub="search">Search</button>
+        <button class="subtab" type="button" data-gsub="browse">Browse</button>
+        <button class="subtab" type="button" data-gsub="recents">Recents</button>
+      </div>
+
+      <!-- 1. Suggested: an AI answer keyed off the ticket's reason code, then
+           the cards matched from reason code / tags (subject opt-in). -->
+      <div class="gsub active" id="gsub-suggested">
+        <!-- Ask Guru AI â€” seeded from the reason code, cites its source cards -->
+        <div class="guru-ask" id="guru-ask" hidden>
+          <div class="guru-ask-row">
+            <input class="dedupe-input guru-ask-input" id="guru-ask-input" type="text" placeholder="Ask Guru AI a questionâ€¦" aria-label="Ask Guru AI">
+            <button class="btn primary guru-ask-btn" id="guru-ask-btn" type="button">Ask</button>
+          </div>
+          <div class="guru-ask-note">AI answer with cited cards Â· seeded from the ticket's reason code</div>
+          <div id="guru-answer-body"></div>
+        </div>
+        <div class="section-head asana-head">
+          <h2>Suggested cards Â· reason code <span id="guru-reason">â€”</span></h2>
+          <button class="btn icon" id="guru-refresh" type="button" title="Refresh suggestions" aria-label="Refresh suggestions">â†»</button>
+        </div>
+        <div id="guru-suggested-body"><div class="card"><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:50%;margin-top:8px"></div></div></div>
+      </div>
+
+      <!-- 2. Search the knowledge base (debounced; collection filter) -->
+      <div class="gsub" id="gsub-search">
+        <div class="guru-search-row">
+          <input class="dedupe-input guru-search-input" id="guru-search-input" type="search" placeholder="Search Guruâ€¦" aria-label="Search Guru">
+          <select class="guru-collection-select" id="guru-collection-filter" aria-label="Filter by collection"><option value="">All collections</option></select>
+        </div>
+        <div id="guru-search-body"><div class="card"><div class="empty-state"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg><div class="es-title">Search the knowledge base</div><div class="es-sub">Cards match on title and content.</div></div></div></div>
+      </div>
+
+      <!-- 3. Browse: collections â†’ folders â†’ cards -->
+      <div class="gsub" id="gsub-browse">
+        <div class="guru-crumbs" id="guru-crumbs"></div>
+        <div id="guru-browse-body"><div class="card"><div class="empty">Loading collectionsâ€¦</div></div></div>
+      </div>
+
+      <!-- 4. Recents + locally pinned cards -->
+      <div class="gsub" id="gsub-recents">
+        <div id="guru-recents-body"><div class="card"><div class="empty">Cards you open show up here.</div></div></div>
+      </div>
+    </div>
+
+    <!-- Guru pop-out: card reader (verification, insert/copy, comments); floats over any tab, minimizes to a chip -->
+    <div class="guru-overlay" id="guru-overlay" hidden>
+      <div class="guru-overlay-head">
+        <span class="guru-overlay-title" id="guru-overlay-title">Guru</span>
+        <div class="guru-overlay-actions">
+          <button class="btn icon" id="guru-min" type="button" title="Minimize to sidebar">â–</button>
+          <button class="btn icon" id="guru-close" type="button" title="Close">âœ•</button>
+        </div>
+      </div>
+      <div class="guru-overlay-body" id="guru-overlay-body"></div>
+    </div>
+    <button class="guru-chip" id="guru-chip" type="button" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2h5l3 3v9H4V2Z"/><path d="M9 2v3h3"/></svg><span id="guru-chip-title">Guru card</span></button>
+
+  </div>
+
+  <script src="./app.js?v=3100"></script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+{
+  "assumptionsNote": "HEAVY-TASKS (15 open Asana tasks/agent): hourly per-agent stagger. HOURLY-STAGGER-1 VARIANT: both home pollers fire once/hour, cohorts of 1. Per-interaction network-call profile of cx-client-data-sidebar 3.9.0 (v2.9.2/cx-client-data-sidebar-v2.9.0), extracted from source 2026-08-16. Pilot live config assumed: DEMO_MODE=false, direct mode (no broker), shared Asana PAT + Slack bot token + Guru auth via Zendesk secure proxy, guru_suggest_tags/subject OFF, triage_field_map blank, aht_endpoint blank, asana_status_buttons OFF. Fractional n = expected value folding a probability into a count (e.g. 0.6 chance a ticket has linked tasks x 1.8 tasks = 1.08). Fleet-size assumptions marked ASSUMED below; re-run with overrides to test sensitivity.",
+  "interactions": {
+    "ticket_open_boot": [
+      {
+        "channel": "zendesk",
+        "n": 11.2,
+        "notes": "custom_objects read (app.js:882) + users/{id} (:220) + organizations 0.9 (:222) + requested?3 (:224) + search contacts/mo (:225) + requested?30 (:226) + search csat30d (:227) + tickets/{tid} (:601) + comments (:602) + search all-time (:603) + search open (:604) = 10.9, + ticket_fields discovery 0.3 (once/session, :605,289)"
+      },
+      {
+        "channel": "asana.search",
+        "n": 1,
+        "notes": "summaryAsana tasks/search (app.js:463,619)"
+      },
+      {
+        "channel": "guru",
+        "n": 1,
+        "notes": "summaryGuru search, reason-code signal only with default opt-ins (app.js:505,620)"
+      }
+    ],
+    "switch_to_account": [],
+    "switch_to_asana": [
+      {
+        "channel": "asana.search",
+        "n": 1,
+        "notes": "loadAsanaDirect tasks/search, once per ticket session (app.js:1249, cached :979)"
+      },
+      {
+        "channel": "asana",
+        "n": 1.9,
+        "notes": "immediate badge sweep: 1 stories GET per linked task (app.js:1451); ASSUMED 60% of tickets have tasks x 1.8 mean tasks"
+      }
+    ],
+    "switch_to_slack": [
+      {
+        "channel": "slack.conversations.history",
+        "n": 1.5,
+        "notes": "Post pane load, 1-10 cursor pages, typically 1-2 (app.js:2328-2342); cached per ticket (:2293)"
+      }
+    ],
+    "slack_workflows_open": [
+      {
+        "channel": "slack.bookmarks.list",
+        "n": 3,
+        "notes": "per scoped channel, ASSUMED 3 channels; cached per mode (app.js:2724, :2703)"
+      },
+      {
+        "channel": "slack.auth.test",
+        "n": 0.5,
+        "notes": "team URL, once until cached (app.js:2878)"
+      },
+      {
+        "channel": "slack.conversations.history",
+        "n": 3,
+        "notes": "requests sweep per scoped channel (app.js:2883)"
+      },
+      {
+        "channel": "slack.conversations.replies",
+        "n": 2,
+        "notes": "0-8 uncached candidates (app.js:2896-2906)"
+      }
+    ],
+    "slack_channels_open": [
+      {
+        "channel": "slack.auth.test",
+        "n": 1,
+        "notes": "app.js:2568"
+      },
+      {
+        "channel": "slack.users.conversations",
+        "n": 1,
+        "notes": "app.js:2570"
+      },
+      {
+        "channel": "slack.stars.list",
+        "n": 1,
+        "notes": "fires and fails on bot token, still a request (app.js:2579)"
+      },
+      {
+        "channel": "slack.conversations.info",
+        "n": 2,
+        "notes": "0-12 non-member channels (app.js:2585-2597)"
+      },
+      {
+        "channel": "slack.conversations.list",
+        "n": 0.9,
+        "notes": "directory search 3 pages, ASSUMED 30% of channel-tab visits search (app.js:2646-2662, cached per session)"
+      }
+    ],
+    "switch_to_guru": [
+      {
+        "channel": "guru",
+        "n": 2,
+        "notes": "1 POST /answers (app.js:3658) + 1 suggested search (:3725); reason-only default"
+      }
+    ],
+    "guru_search": [
+      {
+        "channel": "guru",
+        "n": 1.3,
+        "notes": "1 debounced search/query (app.js:3786) + 0.3 collections first-entry (:3553, cached); browse drills folded in"
+      }
+    ],
+    "open_guru_modal": [
+      {
+        "channel": "guru",
+        "n": 2,
+        "notes": "cards/{id}/extended + cards/{id}/comments (guru_modal.js:270,182)"
+      },
+      {
+        "channel": "zendesk.ticketUpdate",
+        "n": 0.9,
+        "notes": "guru_used tag PUT, once per ticket session (app.js:3513-3520)"
+      }
+    ],
+    "asana_comment_post": [
+      {
+        "channel": "asana",
+        "n": 1,
+        "notes": "POST stories (app.js:1366)"
+      }
+    ],
+    "create_task": [
+      {
+        "channel": "asana.search",
+        "n": 1.3,
+        "notes": "dedupe gate 0-2 searches (app.js:1910-1925)"
+      },
+      {
+        "channel": "asana",
+        "n": 2,
+        "notes": "custom_field_settings read (app.js:1834) + POST /tasks (:1850)"
+      }
+    ],
+    "ticket_close": [
+      {
+        "channel": "zendesk.ticketUpdate",
+        "n": 1.4,
+        "notes": "AHT flush PUT on blur/deactivate/destroy ~0.9 (app.js:3176, no-op without new dwell) + ~0.5 mid-session deactivate flush from tab-switching between 2 open tickets"
+      }
+    ],
+    "home_open": [
+      {
+        "channel": "zendesk",
+        "n": 1,
+        "notes": "search unsolved assigned (home.js:340)"
+      },
+      {
+        "channel": "asana.search",
+        "n": 8,
+        "notes": "1 tasks/search PER unsolved assigned ticket, serialized (home.js:373); ASSUMED 8 unsolved"
+      },
+      {
+        "channel": "asana",
+        "n": 15,
+        "notes": "immediate badge sweep, 1 stories per task card (home.js:206); ASSUMED 5 cards"
+      },
+      {
+        "channel": "slack.conversations.history",
+        "n": 6,
+        "notes": "C channels x 2 sweeps (Slack tab home.js:407 + Requests tab :495); ASSUMED C=3"
+      },
+      {
+        "channel": "slack.auth.test",
+        "n": 1,
+        "notes": "home.js:491"
+      },
+      {
+        "channel": "slack.conversations.replies",
+        "n": 2,
+        "notes": "0-8 uncached (home.js:509-517)"
+      }
+    ]
+  },
+  "pollers": [
+    {
+      "name": "sidebar_asana_badge_poll",
+      "periodSec": 30,
+      "scope": "ticket",
+      "activeWhen": "asanaTab",
+      "dutyCycle": 1,
+      "calls": [
+        {
+          "channel": "asana",
+          "n": 1.9,
+          "notes": "1 stories GET per linked task card, serialized (app.js:1451); UNGATED - no hidden/pane check (app.js:1442), runs while the ticket tab exists"
+        }
+      ]
+    },
+    {
+      "name": "sidebar_slack_sync",
+      "periodSec": 30,
+      "scope": "ticket",
+      "activeWhen": "slackWfTab",
+      "dutyCycle": 0.25,
+      "calls": [
+        {
+          "channel": "slack.conversations.history",
+          "n": 3,
+          "notes": "per scoped channel (app.js:3019,2883)"
+        },
+        {
+          "channel": "slack.conversations.replies",
+          "n": 0.5,
+          "notes": "expanded threads + uncached candidates (app.js:3020-3027)"
+        }
+      ],
+      "notes": "GATED: no-op unless !document.hidden AND Slack pane active AND direct mode (app.js:3011-3014) - dutyCycle 0.25 ASSUMES the agent keeps the pane focused a quarter of the remaining session"
+    },
+    {
+      "name": "aht_interval_flush",
+      "periodSec": 300,
+      "scope": "ticket",
+      "activeWhen": "always",
+      "dutyCycle": 0.85,
+      "calls": [
+        {
+          "channel": "zendesk.ticketUpdate",
+          "n": 1,
+          "notes": "single PUT with all changed AHT fields (app.js:3176,3272); no-op without new dwell"
+        }
+      ]
+    },
+    {
+      "name": "home_asana_badge_poll",
+      "periodSec": 3600,
+      "scope": "home_persistent",
+      "activeWhen": "always",
+      "calls": [
+        {
+          "channel": "asana",
+          "n": 15,
+          "notes": "1 stories GET per home task card (home.js:206); ASSUMED 5 cards. UNGATED (home.js:198) and the nav_bar iframe persists once opened - runs from the agent's FIRST home check until logout"
+        }
+      ],
+      "staggered": {
+        "cohortSize": 1
+      },
+      "notes": "PROPOSED: hourly background refresh, agents staggered in cohorts of 1"
+    },
+    {
+      "name": "home_request_poll",
+      "periodSec": 3600,
+      "scope": "home_persistent",
+      "activeWhen": "always",
+      "dutyCycle": 1,
+      "calls": [
+        {
+          "channel": "slack.conversations.history",
+          "n": 3,
+          "notes": "per configured channel (home.js:495,545)"
+        }
+      ],
+      "notes": "PROPOSED: hourly background Slack requests refresh, same stagger",
+      "staggered": {
+        "cohortSize": 1
+      }
+    }
+  ],
+  "ticketUpdateChannels": [
+    "zendesk.ticketUpdate"
+  ]
+}

@@ -1,0 +1,16 @@
+# Account-specific config stays local — never in the repo
+zcli.apps.config.json
+settings.yml
+.env
+.env.*
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+
+# Tooling
+node_modules/
+__pycache__/
+venv/
+*.log
+tmp/

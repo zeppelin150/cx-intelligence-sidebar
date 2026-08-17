@@ -1,0 +1,28 @@
+﻿<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <title>Guru card</title>
+  <!-- Guru card reader â€” a ZAF "modal" location instance, centered over the
+       whole Agent Workspace (created by the sidebar via instances.create). -->
+  <script src="https://static.zdassets.com/zendesk_app_framework_sdk/2.0/zaf_sdk.min.js"></script>
+  <link rel="stylesheet" href="./app.css?v=3100" />
+  <style>
+    html, body { height: 100%; }
+    body { background: var(--surface); display: flex; flex-direction: column; overflow: hidden; }
+    .m-head { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+    .m-title { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .m-body { flex: 1; overflow-y: auto; padding: 14px; }
+    .m-body .guru-card { border: 0; box-shadow: none; padding: 0; background: transparent; }
+  </style>
+</head>
+<body>
+  <div class="m-head">
+    <span class="m-title" id="m-title">Guru</span>
+    <div class="guru-overlay-actions"><button class="btn icon" id="m-close" type="button" title="Close" aria-label="Close">âœ•</button></div>
+  </div>
+  <div class="m-body" id="m-body"><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:50%;margin-top:8px"></div></div>
+  <script src="./guru_modal.js?v=3100"></script>
+</body>
+</html>

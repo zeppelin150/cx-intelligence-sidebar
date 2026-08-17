@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My active work</title>
+  <!-- nav_bar view: across the agent's assigned, unsolved tickets. Two tabs — Asana
+       (tasks grouped by the "assigned team" custom field) and Slack (threads that
+       reference those ticket ids, grouped by channel). Live via the same secure
+       settings; blank settings -> clearly-labeled sample data. -->
+  <script src="https://static.zdassets.com/zendesk_app_framework_sdk/2.0/zaf_sdk.min.js"></script>
+  <link rel="stylesheet" href="./app.css?v=3100" />
+</head>
+<body class="home-view">
+  <div class="wrap">
+    <!-- Asana comment notification toast (auto-dismisses after 6 s) -->
+    <div id="comment-toast" class="comment-toast" hidden>
+      <span class="comment-toast-msg" id="comment-toast-msg"></span>
+      <button class="comment-toast-close" id="comment-toast-close" type="button" aria-label="Dismiss">✕</button>
+    </div>
+
+    <div class="section-head asana-head">
+      <h2>Across my open tickets <span class="sub" id="home-who"></span></h2>
+      <span class="count-pill" id="home-ticket-count">0</span>
+    </div>
+    <div class="sample-note" id="home-note" hidden>Showing sample data (demo). Add the Asana + Slack settings to go live.</div>
+
+    <div class="subtabs" id="home-subtabs">
+      <button class="subtab active" type="button" data-hsub="asana">Asana</button>
+      <button class="subtab" type="button" data-hsub="slack">Slack</button>
+      <button class="subtab" type="button" data-hsub="requests">Requests</button>
+    </div>
+
+    <!-- Asana: tasks on my unsolved tickets, grouped by assigned team.
+         Rebuilds once a day at this agent's slot; ↻ / Refresh all in between. -->
+    <div class="asub active" id="hsub-asana">
+      <div class="dedupe-hint" id="home-asana-hint">Asana tasks on your unsolved tickets, grouped by assigned team.</div>
+      <div class="asana-controls">
+        <button class="btn small" id="home-asana-refresh" type="button" title="Re-scan your tickets and tasks now">↻ Refresh all</button>
+        <span class="asof" id="home-asana-asof"></span>
+      </div>
+      <div id="home-asana-body"><div class="card"><div class="empty">Loading…</div></div></div>
+    </div>
+
+    <!-- Slack: threads referencing my unsolved tickets, grouped by channel -->
+    <div class="asub" id="hsub-slack">
+      <div class="dedupe-hint" id="home-slack-hint">Slack threads that reference your unsolved tickets, grouped by channel.</div>
+      <div id="home-slack-body"><div class="card"><div class="empty">Loading…</div></div></div>
+    </div>
+
+    <!-- Requests: workflow/ticket requests across the configured channels.
+         Open = no ✅ reaction and no ✅/"resolved" thread reply. -->
+    <div class="asub" id="hsub-requests">
+      <div class="dedupe-hint" id="home-req-hint">Open requests referencing your unsolved tickets. Resolved = ✅ reaction on the Slack message, or a thread reply starting with ✅/“resolved”.</div>
+      <div class="dedupe-controls" style="margin-bottom:8px">
+        <button class="btn small" id="home-req-toggle" type="button" aria-pressed="false">Show resolved too</button>
+      </div>
+      <div id="home-req-body"><div class="card"><div class="empty">Loading…</div></div></div>
+    </div>
+  </div>
+  <script src="./home.js?v=3100"></script>
+</body>
+</html>

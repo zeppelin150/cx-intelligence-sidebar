@@ -1,0 +1,668 @@
+/* ============================================================================
+   CX Client Data Sidebar — Alma Insights theme
+   ----------------------------------------------------------------------------
+   SWAP EXACT ALMA TOKENS HERE. Everything else is expressed in these variables,
+   so replacing the palette is a one-block change. Light is default (Alma's warm
+   brand); dark is a toggle, persisted in localStorage.
+   ============================================================================ */
+
+:root {
+  /* ---- ALMA INSIGHTS PALETTE (light) — replace with exact tokens ---- */
+  --bg:          #FBF7F2;  /* warm cream app background */
+  --surface:     #FFFFFF;  /* cards */
+  --surface-2:   #F4EEE7;  /* insets / rows */
+  --text:        #1C2B27;  /* deep green-charcoal */
+  --muted:       #6A776F;
+  --line:        #E8DFD4;
+  --primary:     #1F4D45;  /* Alma forest green */
+  --primary-ink: #FFFFFF;
+  --primary-weak:#EAF0EE;
+  --accent:      #EC6A4F;  /* coral */
+  --accent-weak: #FBE7E1;
+  --ok:    #2E7D5B; --ok-weak:    #E3F1EA;
+  --warn:  #9C6B16; --warn-weak:  #F5EAD4;
+  --danger:#C24A35; --danger-weak:#F8E2DC;
+  --info:  #2C7A7B; --info-weak:  #DFEFEF;
+
+  /* ---- design system (P0–P2): one scale per primitive ---- */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px;
+  --control-h: 30px;
+  --fs-eyebrow: 11px; --fs-caption: 12px; --fs-body: 13px; --fs-title: 15px; --fs-lg: 18px;
+  --radius-sm: 8px; --radius-md: 10px; --radius-lg: 14px; --radius-pill: 999px;
+  --radius: var(--radius-lg);                                   /* legacy alias → cards/overlays */
+  --shadow-xs: 0 1px 2px rgba(28,43,39,.08);                    /* segmented thumbs */
+  --shadow-sm: 0 1px 2px rgba(28,43,39,.05), 0 8px 24px rgba(28,43,39,.07);  /* cards (the anchor) */
+  --shadow-lg: 0 10px 30px rgba(28,43,39,.14);                  /* overlays, toasts, chip */
+  --shadow: var(--shadow-sm);                                   /* legacy alias */
+  --ease: 150ms cubic-bezier(.4, 0, .2, 1);
+  --ease-fast: 90ms cubic-bezier(.4, 0, .2, 1);
+}
+
+:root[data-theme="dark"] {
+  /* ---- ALMA INSIGHTS PALETTE (dark) ---- */
+  --bg:          #0F1A17;
+  --surface:     #15231F;
+  --surface-2:   #1B2E28;
+  --text:        #ECF3EF;
+  --muted:       #9DB3AB;
+  --line:        rgba(255,255,255,.09);
+  --primary:     #6FB59B;
+  --primary-ink: #0F1A17;
+  --primary-weak:#1E332C;
+  --accent:      #FF8267;
+  --accent-weak: #3A241E;
+  --ok:    #5FBF90; --ok-weak:    #16291F;
+  --warn:  #D9A441; --warn-weak:  #2E2511;
+  --danger:#E5765C; --danger-weak:#33201A;
+  --info:  #5FB8B9; --info-weak:  #122A2A;
+  /* dark depth leans on surface lightness + hairlines; shadows soften */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.35);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.30);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,.48);
+  --shadow: var(--shadow-sm);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.wrap { padding: 12px; }
+[hidden] { display: none !important; }
+
+/* ---- Interaction system: focus, motion, transitions --------------------- */
+/* A real keyboard focus ring (--primary is high-contrast in both themes);
+   replaces the near-invisible --primary-weak outlines. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 2px;
+}
+/* Purposeful micro-transitions on state changes; high-frequency actions stay
+   instant. Guarded so an all-day tool never animates for motion-sensitive users. */
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .tab, .subtab, .demo-seg, .ticket, .guru-row-main, .chip, .badge, .kv,
+  .chevron, .refresh, .guru-crumb, .asana-status-btn, .csat-pill, .type-badge,
+  .comment-toast-link, .aform-source, .atask-name, .guru-pin,
+  input, select, textarea {
+    /* border/shadow/transform ease; background + color snap (crisp hover,
+       and an instant, correct theme switch). */
+    transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease-fast);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important; scroll-behavior: auto !important;
+  }
+}
+
+/* ---- Demo-only Client/Provider toggle ----------------------------------- */
+.demo-toggle { display: flex; align-items: center; gap: 4px; margin-bottom: 10px; padding: 4px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-md); }
+.demo-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 0 6px; }
+.demo-seg { flex: 1; appearance: none; border: 0; background: transparent; color: var(--muted); font: inherit;
+  font-size: 12px; font-weight: 500; padding: 5px 8px; border-radius: var(--radius-sm); cursor: pointer; }
+.demo-seg.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-xs); }
+
+/* ---- Cards / sections ---------------------------------------------------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin: 0 0 8px;
+}
+.section-head h2 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--muted); margin: 0; font-weight: 600;
+}
+.count-pill {
+  display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; color: var(--muted);
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: var(--radius-pill); padding: 2px 8px; font-variant-numeric: tabular-nums;
+}
+
+/* ---- Profile header ------------------------------------------------------ */
+.profile { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; }
+.avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 600; font-size: 15px;
+  color: var(--primary-ink); background: var(--primary);
+}
+.who { min-width: 0; }
+.who .name { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who .email { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.head-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+
+.type-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; border-radius: var(--radius-pill); padding: 2px 9px;
+  border: 1px solid transparent;
+}
+.type-badge.client   { color: var(--info);   background: var(--info-weak);   border-color: color-mix(in srgb, var(--info) 28%, transparent); }
+.type-badge.provider { color: var(--accent); background: var(--accent-weak); border-color: color-mix(in srgb, var(--accent) 28%, transparent); }
+
+/* ---- Buttons ------------------------------------------------------------- */
+.btn {
+  appearance: none; font: inherit; font-size: 12px; font-weight: 500;
+  color: var(--text); background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  height: var(--control-h); padding: 0 12px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn:hover { border-color: var(--primary); background: color-mix(in srgb, var(--surface-2) 82%, var(--text)); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.btn.primary:hover { background: color-mix(in srgb, var(--primary) 88%, black); border-color: color-mix(in srgb, var(--primary) 88%, black); }
+.btn.icon { width: var(--control-h); height: var(--control-h); padding: 0; display: inline-grid; place-items: center; }
+
+/* ---- Key/value grid (retained profile metrics) -------------------------- */
+.kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.kv { background: var(--surface-2); border-radius: var(--radius-md); padding: 8px 10px; }
+.kv .k { color: var(--muted); font-size: 11px; }
+.kv .v { font-size: 13px; font-weight: 500; margin-top: 1px; font-variant-numeric: tabular-nums; }
+.kv.wide { grid-column: 1 / -1; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip {
+  display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px;
+  border-radius: var(--radius-pill); color: var(--primary); background: var(--primary-weak);
+  border: 1px solid color-mix(in srgb, var(--primary) 16%, transparent);
+}
+.csat-pill {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; padding: 3px 8px;
+  border-radius: var(--radius-pill); color: var(--ok); background: var(--ok-weak);
+  border: 1px solid color-mix(in srgb, var(--ok) 25%, transparent); font-variant-numeric: tabular-nums;
+}
+
+/* ---- Status badges ------------------------------------------------------- */
+.badge {
+  display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 3px 8px;
+  border-radius: var(--radius-pill); border: 1px solid transparent; text-transform: capitalize;
+  font-variant-numeric: tabular-nums;
+}
+.badge.ok      { color: var(--ok);     background: var(--ok-weak);     border-color: color-mix(in srgb, var(--ok) 25%, transparent); }
+.badge.warn    { color: var(--warn);   background: var(--warn-weak);   border-color: color-mix(in srgb, var(--warn) 25%, transparent); }
+.badge.danger  { color: var(--danger); background: var(--danger-weak); border-color: color-mix(in srgb, var(--danger) 25%, transparent); }
+.badge.info    { color: var(--info);   background: var(--info-weak);   border-color: color-mix(in srgb, var(--info) 25%, transparent); }
+.badge.neutral { color: var(--muted);  background: var(--surface-2);   border-color: var(--line); }
+
+/* ---- Record lists (eligibility / claims / invoices / credentialing) ----- */
+.rec { border-top: 1px solid var(--line); padding: 9px 0; }
+.rec:first-of-type { border-top: 0; padding-top: 2px; }
+.rec-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rec-title { font-weight: 600; font-size: 13px; }
+.rec-sub { color: var(--muted); font-size: 12px; margin-top: 1px; }
+.rec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; margin-top: 6px; }
+.rec-grid .f { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
+.rec-grid .f .fk { color: var(--muted); }
+.rec-grid .f .fv { font-variant-numeric: tabular-nums; text-align: right; }
+.rec-client { font-size: 11px; color: var(--accent); font-weight: 600; }
+
+.empty { color: var(--muted); font-style: italic; font-size: 12px; padding: 4px 0; }
+
+/* ---- Provider client filter --------------------------------------------- */
+.filter-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.filter-row label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+select.filter {
+  font: inherit; font-size: 12px; color: var(--text);
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 5px 8px; flex: 1; min-width: 0;
+}
+select.filter:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent); border-color: var(--primary); }
+
+/* ---- Provider client search --------------------------------------------- */
+.search-row { display: flex; gap: 8px; align-items: center; }
+.search-input {
+  flex: 1; min-width: 0; font: inherit; font-size: 12px; color: var(--text);
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 6px 9px;
+}
+.search-input:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent); border-color: var(--primary); }
+.search-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+/* ---- Tickets (retained) -------------------------------------------------- */
+.tickets { display: grid; gap: 8px; }
+.ticket {
+  display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center;
+  padding: 9px 10px; border-radius: var(--radius-md); background: var(--surface-2);
+  border: 1px solid var(--line); cursor: pointer;
+}
+.ticket:hover { background: var(--surface); border-color: var(--primary); }
+.ticket:active { transform: translateY(1px); }
+.ticket .subject { font-weight: 500; word-break: break-word; }
+.ticket .meta { font-size: 12px; color: var(--muted); }
+
+/* ---- Skeleton / freshness / error --------------------------------------- */
+.skeleton { height: 11px; border-radius: var(--radius-sm); background: var(--surface-2); position: relative; overflow: hidden; }
+.skeleton::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,.04), transparent);
+  transform: translateX(-100%); animation: sh 1.2s infinite;
+}
+:root[data-theme="dark"] .skeleton::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,.05), transparent); }
+@keyframes sh { 100% { transform: translateX(100%); } }
+
+.stamp { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; margin-top: 4px; }
+.stamp.stale { color: var(--warn); font-weight: 500; }
+.refresh, .refresh-spin { display: inline-grid; place-items: center; width: 20px; height: 20px; color: var(--muted); }
+.refresh { appearance: none; border: 0; background: transparent; cursor: pointer; border-radius: var(--radius-sm); padding: 0; }
+.refresh:hover { background: var(--surface-2); color: var(--text); }
+.refresh svg, .refresh-spin svg { width: 13px; height: 13px; display: block; }
+.refresh-spin svg { animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.rfi { display: inline-block; font-size: 14px; line-height: 1; }
+#btn-refresh.spinning .rfi { animation: spin .9s linear infinite; }
+.sample-note {
+  font-size: 11px; color: var(--warn); background: var(--warn-weak);
+  border: 1px dashed var(--warn); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 10px;
+}
+
+.error { text-align: center; padding: 18px 10px; }
+.error p { color: var(--muted); margin: 0 0 10px; }
+
+/* ---- Collapsible sections ----------------------------------------------- */
+.head-right { display: flex; align-items: center; gap: 6px; }
+.chevron {
+  appearance: none; border: 0; background: transparent; color: var(--muted);
+  cursor: pointer; width: 22px; height: 22px; padding: 0; border-radius: var(--radius-sm);
+  display: inline-grid; place-items: center;
+  transition: transform .15s ease, background .12s, color .12s;
+}
+.chevron:hover { background: var(--surface-2); color: var(--text); }
+.chevron svg { width: 14px; height: 14px; display: block; }
+.collapsible.collapsed .chevron { transform: rotate(-90deg); }   /* points right when collapsed */
+.collapsible.collapsed > .collapse-body { display: none; }
+/* On the profile card the chevron sits in the corner above the badge. */
+#card-profile .head-actions > .chevron { margin-bottom: 2px; }
+
+/* ---- Refresh "scan bars" sweep (Lightdash/Metabase-style) ---------------- */
+#context-shell.scanning .card { position: relative; overflow: hidden; }
+#context-shell.scanning .card::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 34%, rgba(0,0,0,.06) 50%, transparent 66%);
+  background-size: 220% 100%; animation: scan 1.15s linear infinite;
+}
+:root[data-theme="dark"] #context-shell.scanning .card::after {
+  background: linear-gradient(100deg, transparent 34%, rgba(255,255,255,.10) 50%, transparent 66%);
+  background-size: 220% 100%;
+}
+@keyframes scan { 0% { background-position: 220% 0; } 100% { background-position: -120% 0; } }
+
+/* ---- Tabs (client context | asana) -------------------------------------- */
+.tabs {
+  display: flex; gap: 4px; margin-bottom: 10px; padding: 4px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-md);
+}
+.tab {
+  flex: 1; appearance: none; border: 0; background: transparent; color: var(--muted);
+  font: inherit; font-size: 12px; font-weight: 600; padding: 6px 4px;
+  border-radius: var(--radius-sm); cursor: pointer; white-space: nowrap;
+}
+.tab:hover { color: var(--text); }
+.tab.active { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-xs); }
+.pane { display: none; }
+.pane.active { display: block; }
+
+/* ---- Asana sub-navigation: Tasks | Create | Search ----------------------
+   Styled identically to the demo Client/Provider selector (.demo-toggle). */
+.subtabs {
+  display: flex; align-items: center; gap: 4px; margin: 0 0 10px; padding: 4px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-md);
+}
+.subtab {
+  flex: 1; appearance: none; border: 0; background: transparent; color: var(--muted);
+  font: inherit; font-size: 12px; font-weight: 500; padding: 5px 8px;
+  border-radius: var(--radius-sm); cursor: pointer;
+}
+.subtab:hover { color: var(--text); }
+.subtab.active { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-xs); }
+.asub { display: none; }
+.asub.active { display: block; }
+
+/* ---- Other requests (dedupe) -------------------------------------------- */
+.dedupe-controls { display: flex; gap: 6px; margin-bottom: 8px; }
+.dedupe-input {
+  flex: 1; min-width: 0; font: inherit; font-size: 13px; color: var(--text);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 7px 9px;
+}
+.dedupe-input:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent); border-color: var(--primary); }
+.dedupe-hint { color: var(--muted); font-size: 11px; margin-bottom: 8px; }
+
+/* ---- Duplicate-warning toast -------------------------------------------- */
+.toast {
+  position: sticky; bottom: 8px; margin-top: 12px;
+  background: var(--surface); border: 1px solid var(--warn); border-left: 3px solid var(--warn);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 10px 12px; z-index: 30;
+}
+.toast-msg { font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+.toast-actions { display: flex; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+
+/* ---- Asana tasks pane ---------------------------------------------------- */
+.asana-head { margin: 2px 0 10px; }
+.asana-head h2 { text-transform: none; font-size: 13px; letter-spacing: 0; color: var(--text); font-weight: 600; }
+.asana-head h2 span { color: var(--muted); font-weight: 500; }
+.atask { padding: 10px 12px; }
+.atask-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.atask-name { font-weight: 600; font-size: 13px; color: var(--primary); text-decoration: none; word-break: break-word; }
+.atask-name:hover { text-decoration: underline; }
+.atask-meta { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.atask-toggle {
+  margin-top: 8px; color: var(--muted); font-size: 12px; font-weight: 500;
+  cursor: pointer; user-select: none; display: inline-block;
+}
+.atask-toggle:hover { color: var(--text); }
+.subs { display: none; margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--line); }
+.subs.open { display: block; }
+.sub { padding: 6px 0; border-top: 1px solid var(--line); }
+.sub:first-child { border-top: 0; padding-top: 2px; }
+.sub-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sub-name { font-size: 13px; font-weight: 500; word-break: break-word; }
+.sub-meta { color: var(--muted); font-size: 11px; margin-top: 1px; }
+
+.abell { display: inline-block; font-size: 11px; font-weight: 600; color: #fff; background: var(--accent); border-radius: var(--radius-pill); padding: 2px 8px; white-space: nowrap; margin-right: 4px; }
+/* Right-side cluster (unread emblem + status badge) on a task or subtask row */
+.atask-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.sub .abell { font-size: 10px; padding: 1px 6px; margin-right: 0; }
+/* Per-subtask comment thread (each subtask has its own) */
+.sub-cmt-toggle { margin-top: 5px; color: var(--muted); font-size: 11px; font-weight: 500; cursor: pointer; user-select: none; display: inline-block; }
+.sub-cmt-toggle:hover { color: var(--text); }
+.sub-cmt { margin-top: 6px; padding-left: 8px; border-left: 2px solid var(--line); }
+.sub-cmt .cmt-list { gap: 6px; }
+
+/* ---- Home (nav_bar) grouped sections: Asana by team / Slack by channel ---- */
+.hgroup { margin-bottom: 14px; }
+.hgroup-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px 7px; }
+.hgroup-name { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.hgroup-body { display: grid; gap: 10px; }
+
+/* ---- Home (nav_bar): bound the frame, scroll the active pane internally ----
+  nav_bar iframes are height-capped by Zendesk; growing to fit overflows that
+  cap and buries the comment composer. Pin the wrap to the iframe height and
+  let only the active sub-pane scroll. Scoped to body.home-view so the ticket
+  sidebar (same stylesheet) is untouched. */
+body.home-view { height: 100vh; overflow: hidden; }
+body.home-view .wrap { height: 100vh; display: flex; flex-direction: column; }
+body.home-view .section-head,
+body.home-view .sample-note,
+body.home-view #home-subtabs { flex: 0 0 auto; }
+body.home-view .asub { min-height: 0; }
+body.home-view .asub.active { flex: 1 1 auto; overflow-y: auto; padding-bottom: 80px; }
+
+/* ---- Guru pane: card + pop-out overlay + minimize chip ------------------- */
+.guru-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px; }
+.guru-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.guru-card-title { font-weight: 600; font-size: 14px; }
+.guru-content { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.guru-content h3 { font-size: 13px; margin: 10px 0 4px; }
+.guru-content ul, .guru-content ol { margin: 6px 0 6px 18px; padding: 0; }
+.guru-content li { margin: 2px 0; }
+.guru-content code { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0 4px; font-size: 12px; }
+.guru-content a { color: var(--primary); }
+.guru-cmt { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 7px; }
+.guru-cmt-input { width: 100%; resize: vertical; min-height: 56px; font: inherit; font-size: 13px; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 9px; }
+.guru-cmt-input:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent); border-color: var(--primary); }
+.guru-overlay { position: fixed; inset: 0; z-index: 60; background: var(--surface); display: flex; flex-direction: column; }
+.guru-overlay-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.guru-overlay-title { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.guru-overlay-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.guru-overlay-body { flex: 1; overflow: auto; padding: 12px; }
+.guru-overlay-body .guru-card { border: 0; box-shadow: none; padding: 0; }
+.guru-chip { position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 55; appearance: none; border: 1px solid var(--primary); background: var(--surface); color: var(--text); border-radius: var(--radius-pill); box-shadow: var(--shadow-lg); padding: 8px 14px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.guru-chip:hover { background: var(--surface-2); }
+.guru-chip svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 6px; color: var(--primary); }
+.guru-vbar-state { font-variant-numeric: tabular-nums; }
+
+/* Guru pane v2: sub-views, result rows, trust badges, browse crumbs, card actions */
+.gsub { display: none; }
+.gsub.active { display: block; }
+.guru-search-row { display: flex; gap: 6px; margin-bottom: 8px; }
+.guru-search-row .guru-search-input { flex: 1; min-width: 0; }
+.guru-collection-select { max-width: 42%; font: inherit; font-size: 12px; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 6px 8px; }
+.guru-collection-select:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent); border-color: var(--primary); }
+.guru-row { display: flex; align-items: stretch; gap: 6px; margin-bottom: 6px; }
+.guru-row-main { flex: 1; min-width: 0; display: block; text-align: left; font: inherit; cursor: pointer; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 8px 10px; color: var(--text); }
+.guru-row-main:hover { background: var(--surface); border-color: var(--primary); }
+.guru-row-main:active { transform: translateY(1px); }
+/* Informational rows (no drill/open action) opt out of the click affordance. */
+.guru-row-static { cursor: default; }
+.guru-row-static:hover { background: var(--surface-2); border-color: var(--line); }
+.guru-row-title { display: block; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.guru-row-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 3px; }
+.guru-row-col { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; }
+/* Match provenance ("reason code" / "ticket tags") is quiet inline text, not a
+   pill — dashed boxes are the sample-data language elsewhere in the app. */
+.guru-row-why { font-size: 11px; color: var(--muted); }
+.guru-row-meta > * + .guru-row-why::before { content: "·"; margin-right: 6px; }
+/* Drill-down rows (browse, channels): leading glyph + right affordance on one line */
+.guru-row-nav { display: flex; align-items: center; gap: 8px; }
+.guru-row-nav .guru-row-ic { flex-shrink: 0; display: inline-grid; place-items: center; color: var(--muted); }
+.guru-row-nav .guru-row-ic svg { width: 15px; height: 15px; display: block; }
+.guru-row-nav .guru-row-title { flex: 1; min-width: 0; }
+.guru-row-drill { flex-shrink: 0; color: var(--muted); font-size: 14px; line-height: 1; }
+.gv-badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; border-radius: var(--radius-pill); border: 1px solid transparent; padding: 2px 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gv-ok { color: var(--ok); background: var(--ok-weak); border-color: color-mix(in srgb, var(--ok) 25%, transparent); }
+.gv-warn { color: var(--warn); background: var(--warn-weak); border-color: color-mix(in srgb, var(--warn) 25%, transparent); }
+.guru-pin { flex-shrink: 0; align-self: center; }
+.guru-pin.pinned { color: var(--warn); border-color: var(--warn); }
+/* In list rows the pin stays quiet until the row is engaged (or it's pinned);
+   the reader keeps its always-visible bordered pin. Hoverless inputs see all. */
+.guru-row .guru-pin { border-color: transparent; background: transparent; opacity: 0; }
+.guru-row:hover .guru-pin, .guru-row:focus-within .guru-pin, .guru-row .guru-pin.pinned { opacity: 1; }
+.guru-row .guru-pin:hover { border-color: var(--line); background: var(--surface); }
+@media (hover: none) { .guru-row .guru-pin { opacity: 1; } }
+.guru-crumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; margin: 0 0 8px -6px; font-size: 12px; }
+.guru-crumb { appearance: none; border: 0; background: none; font: inherit; font-size: 12px; color: var(--primary); cursor: pointer; padding: 4px 6px; min-height: 24px; border-radius: var(--radius-sm); }
+.guru-crumb:hover:not([disabled]) { background: var(--surface-2); }
+.guru-crumb[disabled] { color: var(--text); font-weight: 600; cursor: default; }
+.guru-crumb-sep { color: var(--muted); }
+/* Designed empty/idle states (P1 "empty/loading craft"): glyph + line + hint. */
+.empty-state { display: grid; gap: 4px; justify-items: center; text-align: center; padding: 18px 12px; }
+.empty-state svg { width: 20px; height: 20px; color: var(--muted); opacity: .75; margin-bottom: 2px; }
+.empty-state .es-title { font-size: 13px; font-weight: 500; color: var(--text); }
+.empty-state .es-sub { font-size: 12px; color: var(--muted); }
+/* Ask Guru AI panel (top of Suggested) */
+.guru-ask { margin: 0 0 12px; padding: 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.guru-ask-row { display: flex; gap: 6px; }
+.guru-ask-row .guru-ask-input { flex: 1; min-width: 0; }
+.guru-ask-note { font-size: 11px; color: var(--muted); margin: 6px 2px 0; }
+.guru-answer { margin-top: 8px; }
+.guru-ai-badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--primary); background: var(--primary-weak); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-pill); padding: 2px 8px; margin-bottom: 6px; }
+.guru-answer-text { font-size: 13px; line-height: 1.5; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 10px; overflow-wrap: anywhere; }
+.guru-answer-text p { margin: 0 0 6px; }
+.guru-answer-text p:last-child { margin-bottom: 0; }
+.guru-answer-text ul, .guru-answer-text ol { margin: 6px 0 6px 18px; padding: 0; }
+.guru-answer-sources { margin-top: 8px; }
+.guru-answer.error p { color: var(--muted); margin: 0 0 6px; }
+.guru-row-link { display: flex; align-items: center; text-decoration: none; }
+.btn.small { padding: 3px 8px; font-size: 12px; }
+
+.guru-vbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+.guru-vbar-state { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.guru-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.guru-hint { font-size: 11px; color: var(--muted); margin: -4px 0 8px; }
+
+/* Asana pane — direct-mode task detail (submission, comments, composer) */
+.adetail { margin-top: 9px; border-top: 1px solid var(--line); padding-top: 9px; }
+.adetail-note { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 13px; overflow-wrap: anywhere; max-height: 160px; overflow-y: auto; }
+.adetail .kv-grid { margin-top: 8px; }
+.cmt-label { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; margin: 10px 0 6px; }
+.cmt-thread { display: block; }
+.cmt-list { display: grid; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px; }
+.cmt-thread .composer { border-top: 1px solid var(--line); padding-top: 9px; margin-top: 9px; }
+/* ---- Asana task status buttons (On-hold / Pending) --------------------- */
+.asana-status-bar { display: flex; gap: 6px; margin-top: 7px; }
+.asana-status-btn { font-size: 11px; padding: 3px 10px; border-radius: var(--radius-sm); font-weight: 600; opacity: 0.85; }
+.asana-status-btn:hover { opacity: 1; }
+.asana-status-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* ---- Comment notification toast (top of sidebar) ----------------------- */
+.comment-toast {
+  position: sticky; top: 8px; z-index: 40; margin-bottom: 10px;
+  background: var(--primary); color: var(--primary-ink);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+  padding: 9px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  animation: toast-in 0.2s ease;
+}
+.comment-toast-msg { font-size: 13px; font-weight: 500; flex: 1; }
+.comment-toast-link { font-size: 12px; font-weight: 600; color: var(--primary-ink); opacity: 0.85; text-decoration: underline; cursor: pointer; white-space: nowrap; }
+.comment-toast-link:hover { opacity: 1; }
+.comment-toast-close { background: none; border: none; color: var(--primary-ink); font-size: 14px; cursor: pointer; opacity: 0.7; padding: 0 2px; line-height: 1; }
+.comment-toast-close:hover { opacity: 1; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+.task-age { font-size: 10px; font-weight: 600; border-radius: var(--radius-sm); padding: 2px 6px; margin-left: 5px; }
+.task-age-green { background: var(--ok-weak); color: var(--ok); }
+.task-age-yellow { background: var(--warn-weak); color: var(--warn); }
+.task-age-red { background: var(--danger-weak); color: var(--danger); }
+.cmt { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 10px; background: var(--surface); }
+.cmt-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.cmt-who { font-weight: 600; font-size: 12px; }
+.cmt-when { color: var(--muted); font-size: 11px; }
+.cmt-text { font-size: 13px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+.composer { margin-top: 9px; display: grid; gap: 7px; }
+.composer-input { width: 100%; resize: vertical; min-height: 52px; font: inherit; font-size: 13px; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 9px; }
+.composer-input:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent); border-color: var(--primary); }
+.composer-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.composer-hint { color: var(--muted); font-size: 11px; }
+
+/* ---- Asana request form ("Request" pane) --------------------------------- */
+.aform { display: grid; gap: 10px; }
+.aform-source { font-size: 11px; font-weight: 500; color: var(--muted); text-decoration: none; white-space: nowrap; }
+.aform-source:hover { color: var(--primary); text-decoration: underline; }
+.aform-heading {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600;
+  color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; margin-top: 2px;
+}
+.aform-heading:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+.aform-q { display: grid; gap: 4px; }
+.aform-label { font-size: 13px; font-weight: 500; white-space: pre-line; }
+.aform-req { color: var(--danger); font-weight: 600; }
+.aform-help { color: var(--muted); font-size: 11px; white-space: pre-line; }
+.aform-input {
+  width: 100%; font: inherit; font-size: 13px; color: var(--text);
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 7px 9px;
+}
+.aform-input:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent); border-color: var(--primary); }
+.aform-input.aform-prefilled { border-color: var(--primary); background: var(--primary-weak); }
+textarea.aform-input { resize: vertical; min-height: 56px; }
+.aform-select { appearance: auto; }
+.aform-checks { display: grid; gap: 5px; }
+.aform-check { display: flex; align-items: flex-start; gap: 7px; font-size: 13px; cursor: pointer; }
+.aform-check input { margin-top: 2px; accent-color: var(--primary); }
+.aform-attach {
+  font-size: 12px; color: var(--muted); background: var(--surface-2);
+  border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: 7px 9px;
+}
+.aform-branch { display: grid; gap: 10px; padding-left: 10px; border-left: 2px solid var(--primary-weak); }
+.aform-invalid .aform-input, .aform-invalid .aform-checks { border-color: var(--danger); }
+.aform-err { color: var(--danger); font-size: 11px; font-weight: 500; }
+.aform-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.aform-status { flex: 1; font-size: 12px; color: var(--muted); }
+.aform-status-err { color: var(--danger); font-weight: 500; }
+.aform-done { text-align: center; display: grid; gap: 8px; justify-items: center; padding: 18px 12px; }
+.aform-done-icon { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-size: 18px; font-weight: 600; color: var(--ok); background: var(--ok-weak); border: 1px solid var(--ok); }
+.aform-done-title { font-size: 14px; font-weight: 600; }
+.aform-done-name { font-size: 13px; color: var(--muted); word-break: break-word; }
+.aform-done-meta { font-size: 11px; color: var(--muted); }
+.aform-skips { display: grid; gap: 4px; width: 100%; }
+.aform-skip { font-size: 11px; color: var(--warn); background: var(--warn-weak); border: 1px dashed var(--warn); border-radius: var(--radius-sm); padding: 4px 8px; text-align: left; }
+.aform-done-actions { display: flex; gap: 8px; }
+
+/* ---- Slack pane ----------------------------------------------------------- */
+/* Sub-navigation (Post | Channels | Workflows); rows reuse the .guru-row grammar
+   (the app's one list-row system), like .dedupe-input/.composer-input reuse. */
+.ssub { display: none; }
+.ssub.active { display: block; }
+.srow-open { flex-shrink: 0; align-self: center; }
+.scompose { display: grid; gap: 8px; }
+.scompose-row { display: flex; align-items: center; gap: 8px; }
+.scompose-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.scompose-row .aform-select { flex: 1; }
+.spost { padding: 10px 12px; }
+.spost-title { font-weight: 600; font-size: 13px; word-break: break-word; }
+.spost-text { font-size: 13px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+.spost-meta { color: var(--muted); font-size: 12px; margin-top: 5px; }
+.spost-meta a { color: var(--primary); text-decoration: none; }
+.spost-meta a:hover { text-decoration: underline; }
+.sthread { margin-top: 9px; border-top: 1px solid var(--line); padding-top: 9px; }
+
+/* ---- Unified control height: buttons never sit shorter than their fields - */
+.dedupe-input, .search-input, select.filter, .guru-collection-select,
+.aform-input:not(textarea) {
+  height: var(--control-h); padding-top: 0; padding-bottom: 0;
+}
+.btn.small { height: 26px; padding: 0 10px; }
+
+/* ---- Signature detail: a single accent rail marks the section you're in -- */
+#pane-guru .gsub.active > .section-head { position: relative; padding-left: 10px; }
+#pane-guru .gsub.active > .section-head::before {
+  content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 2px;
+  border-radius: var(--radius-pill); background: var(--primary);
+}
+
+/* ---- Summary card (local ticket digest) ---------------------------------- */
+.sum-flag {
+  font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--muted); background: var(--surface-2); padding: 2px 7px;
+  border: 1px solid var(--line); border-radius: var(--radius-pill); cursor: default;
+}
+.sum-gist { font-size: 13px; line-height: 1.45; }
+.sum-chips { margin-top: 8px; }
+.chip.sum-topic { color: var(--ok); background: var(--ok-weak); border-color: color-mix(in srgb, var(--ok) 20%, transparent); }
+.sum-grid { margin-top: 10px; }
+.sum-hist { margin-top: 10px; font-size: 12px; color: var(--muted); }
+.sum-block { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.sum-block-head {
+  font-size: 11px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+}
+.sum-row { display: flex; align-items: center; gap: 7px; padding: 3px 0; min-width: 0; }
+.sum-row-name { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sum-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+.sum-dot.open { background: var(--warn); }
+.sum-dot.done { background: var(--ok); }
+.sum-link {
+  display: inline-block; border: 0; background: none; padding: 2px 0; margin-top: 2px;
+  font-size: 12px; font-weight: 500; color: var(--primary); cursor: pointer;
+}
+.sum-link:hover { text-decoration: underline; }
+.sum-cap { margin-top: 12px; font-size: 10.5px; color: var(--muted); }
+#sum-guru .guru-row { margin-bottom: 4px; }
+
+/* Intelligent-triage chips on the Summary card (✦ = Zendesk AI prediction) */
+.chip.sum-ai { border-style: dashed; }
+.chip.sum-ai-pos { color: var(--ok); background: var(--ok-weak); border-color: color-mix(in srgb, var(--ok) 25%, transparent); }
+.chip.sum-ai-neg { color: var(--danger); background: var(--danger-weak); border-color: color-mix(in srgb, var(--danger) 25%, transparent); }
+
+/* Boot-failure state shown on the Summary (landing) pane */
+.sum-boot-error { font-size: 13px; color: var(--danger); margin-bottom: 8px; }
+
+/* ---- Home daily-refresh affordances (3.10.0) ----------------------------- */
+/* Controls row above the Asana groups: Refresh all + the snapshot age.      */
+.asana-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.asof { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+/* Per-card refresh: quiet until the card is engaged, same contract as the
+   Guru list pins. Overlaid (no reserved space) so the pills/badges in the
+   tight .atask-right cluster never get squeezed at flyout widths; it floats
+   in just left of the cluster on hover/focus. Hoverless inputs get it
+   in-flow and always visible. */
+.atask-right { position: relative; }
+.acard-refresh {
+  appearance: none; border: 1px solid var(--line); background: var(--surface);
+  color: var(--muted); font: inherit; font-size: 13px; line-height: 1;
+  width: 22px; height: 22px; padding: 0; border-radius: 50%;
+  display: inline-grid; place-items: center; cursor: pointer; flex-shrink: 0;
+  position: absolute; right: 100%; top: 50%; transform: translateY(-50%);
+  margin-right: 4px; opacity: 0; pointer-events: none;
+}
+.atask:hover .acard-refresh, .atask:focus-within .acard-refresh { opacity: 1; pointer-events: auto; }
+.acard-refresh:hover { background: var(--surface-2); color: var(--text); }
+.acard-refresh[disabled] { opacity: .45; cursor: default; }
+@media (hover: none) {
+  .acard-refresh { position: static; transform: none; margin-right: 0; opacity: 1; pointer-events: auto; border-color: transparent; background: transparent; }
+}

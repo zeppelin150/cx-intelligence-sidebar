@@ -1,0 +1,52 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>ZAF outside Zendesk — no session</title>
+<style>body{font:13px ui-monospace,monospace;padding:16px;max-width:760px}
+b{display:block;margin-top:12px}pre{background:#f4f4f4;padding:8px;white-space:pre-wrap}</style>
+<h3>ZAF SDK loaded in a plain tab, no Zendesk session</h3>
+<pre id="out">running…</pre>
+<script src="https://static.zdassets.com/zendesk_app_framework_sdk/2.0/zaf_sdk.min.js"></script>
+<script>
+var lines = [];
+function say(k, v) { lines.push(k + ": " + v); document.getElementById("out").textContent = lines.join("\n"); }
+
+// 1. Did the SDK script load at all from a non-Zendesk origin?
+say("page origin", location.origin || "(file://, opaque)");
+say("window.parent === window", String(window.parent === window));
+say("typeof ZAFClient", typeof ZAFClient);
+
+// 2. What does the app's own guard evaluate to here?
+say("app guard (typeof ZAFClient !== 'undefined')", String(typeof ZAFClient !== "undefined"));
+
+// 3. What does init() actually do with no origin/app_guid params and no Zendesk parent?
+var client = null;
+try {
+  client = (typeof ZAFClient !== "undefined") ? ZAFClient.init() : null;
+  say("ZAFClient.init() returned", Object.prototype.toString.call(client) + " / truthy=" + String(!!client));
+} catch (e) {
+  say("ZAFClient.init() THREW", e && e.name + ": " + e.message);
+}
+
+// 4. If we got a client, does any call ever come back? Race it against a timeout.
+if (client && typeof client.get === "function") {
+  var settled = false;
+  var t = setTimeout(function () {
+    if (!settled) { settled = true; say("client.get('currentUser') after 6s", "NEVER SETTLED - no parent frame answered the postMessage"); }
+  }, 6000);
+  try {
+    client.get("currentUser").then(function (d) {
+      if (settled) return; settled = true; clearTimeout(t);
+      say("client.get('currentUser') RESOLVED", JSON.stringify(d).slice(0, 300));
+    }).catch(function (e) {
+      if (settled) return; settled = true; clearTimeout(t);
+      say("client.get('currentUser') REJECTED", String(e && (e.message || e)));
+    });
+  } catch (e) { say("client.get threw synchronously", String(e && e.message)); }
+} else {
+  say("client.get", "unreachable - no usable client object");
+}
+
+// 5. The credential question: what is actually in the shipped bundle?
+say("\nheader literal in app.js:792", "Authorization: Bearer {{setting.asana_pat}}");
+say("sent verbatim without Zendesk's proxy", "yes - the placeholder is not a token, so Asana would 401");
+</script>

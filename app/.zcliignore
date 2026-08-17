@@ -1,0 +1,7 @@
+# Never package these — they are local-development files, and settings.yml/.env are the
+# only places a plaintext credential could plausibly land in this tree.
+settings.yml
+.env
+.env.*
+*.log
+tmp/

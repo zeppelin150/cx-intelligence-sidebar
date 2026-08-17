@@ -1,0 +1,2785 @@
+{
+  "_README": [
+    "HOW TO MAP THIS FORM (edit this file, no code changes needed):",
+    "",
+    "zendesk_prefill — per question id, where the answer is auto-filled from. Sources:",
+    "  agent.email | agent.name | agent.first | requester.email | requester.name |",
+    "  requester.first | ticket.id | ticket.url | ticket.subject |",
+    "  field:<zendesk custom field id>   (e.g. field:1215565058346606)",
+    "  template:...{token}...            (any of the above tokens in braces, e.g.",
+    "                                     'template:{agent.first} - {ticket.subject}')",
+    "  Empty string = no prefill; the agent types the value.",
+    "",
+    "asana_custom_fields — per question id, the GID of the Asana custom field on the",
+    "  target project that should receive the answer. Empty = the answer only goes",
+    "  into the task description (every answer is ALWAYS written to the description,",
+    "  exactly like an Asana form submission). Find GIDs: open the project ->",
+    "  Customize -> Fields, or GET /projects/<project_gid>/custom_field_settings.",
+    "  Dropdown answers are matched to the Asana field's enum options BY NAME",
+    "  (case-insensitive); if a name differs between the form and the field, add an",
+    "  explicit pair to enum_value_map below.",
+    "",
+    "enum_value_map — optional: form option id -> Asana enum_option GID, for when",
+    "  option names don't match between this config and the Asana custom field.",
+    "",
+    "form.project_gid — the Asana project the created task lands in.",
+    "form.ticket_id_custom_field_gid — if set, the created task also gets this",
+    "  custom field = the Zendesk ticket id, so it shows up in the 'Asana tasks'",
+    "  pane. Cleared/skipped automatically if the project doesn't have the field.",
+    "",
+    "questions — generated from the live Asana form; ids are the form's own stable",
+    "  ids. Re-run tools/gen_form_config.py to refresh after the form changes",
+    "  (your mappings above are preserved)."
+  ],
+  "form": {
+    "name": "Duplicate of CX Support Form ",
+    "source_url": "https://form.asana.com/?k=1OaXpb_9VpsCaHKes50DpA&d=592179530557868",
+    "project_gid": "1211838054602648",
+    "ticket_id_custom_field_gid": "1215814007096703",
+    "task_name_question": "1215659907352657",
+    "description_question": "1215659907352659",
+    "submitter_email_question": "1215659907172325",
+    "client_id_question": "1215660137647974",
+    "provider_id_question": "1215660137647980",
+    "dedupe_window_days": 14
+  },
+  "zendesk_prefill": {
+    "1215659907172325": {
+      "label": "Email address",
+      "source": "agent.email"
+    },
+    "1215660137647974": {
+      "label": "Please list the impacted client ID",
+      "source": ""
+    },
+    "1215660137647976": {
+      "label": "Please link the client's Alma Profile Claims Page URL",
+      "source": ""
+    },
+    "1215660137647980": {
+      "label": "Please list the impacted provider ID",
+      "source": ""
+    },
+    "1215660137647982": {
+      "label": "If this relates to a specific Zendesk ticket, please provide the Zendesk ticket link",
+      "source": "ticket.url"
+    },
+    "1215660137647984": {
+      "label": "What level of urgency should this task be completed with?",
+      "source": ""
+    },
+    "1215660137647988": {
+      "label": "Why is this an Urgent Request?",
+      "source": ""
+    },
+    "1215660137647992": {
+      "label": "Does this request need to be completed on the same day?",
+      "source": ""
+    },
+    "1215660137647998": {
+      "label": "What type of Support Request is this?",
+      "source": ""
+    },
+    "1215659752356101": {
+      "label": "What type of Business Support need is this?",
+      "source": ""
+    },
+    "1215659752356105": {
+      "label": "Please outline what support you need from the Accounting Team",
+      "source": ""
+    },
+    "1215659752356112": {
+      "label": "If relevant, please link to the client’s insurance portal",
+      "source": ""
+    },
+    "1215659752356116": {
+      "label": "If relevant, please link to the client’s insurance portal",
+      "source": ""
+    },
+    "1215659752356121": {
+      "label": "What is the provider's first and last name?",
+      "source": ""
+    },
+    "1215659752356125": {
+      "label": "What help do you need from the Sales Team?",
+      "source": ""
+    },
+    "1215659752356129": {
+      "label": "Salesforce link of referee",
+      "source": ""
+    },
+    "1215659752363299": {
+      "label": "Salesforce link of referrer",
+      "source": ""
+    },
+    "1215659752363301": {
+      "label": "If we’re asked to honor a referral, did the referee confirm that they were referred?",
+      "source": ""
+    },
+    "1215659752363307": {
+      "label": "Is the referee’s start date more than 60 days ago?",
+      "source": ""
+    },
+    "1215659752363311": {
+      "label": "Salesforce link of referee",
+      "source": ""
+    },
+    "1215659752363313": {
+      "label": "Salesforce link of referrer",
+      "source": ""
+    },
+    "1215659752363315": {
+      "label": "Is the referee’s profile live or did the referee submit a claim?",
+      "source": ""
+    },
+    "1215659752363321": {
+      "label": "Salesforce link of the provider",
+      "source": ""
+    },
+    "1215659752363326": {
+      "label": "Please outline the provider's degree type (MA / NP / PhD / MD).",
+      "source": ""
+    },
+    "1215660137683190": {
+      "label": "Please outline what state(s) the provider is licensed in.",
+      "source": ""
+    },
+    "1215660137683192": {
+      "label": "Which insurance providers is the provider currently credentialed with?",
+      "source": ""
+    },
+    "1215660137683200": {
+      "label": "Please outline if they are a Monthly or Annual provider.",
+      "source": ""
+    },
+    "1215660137683204": {
+      "label": "Please outline the provider's current membership start date?",
+      "source": ""
+    },
+    "1215660137683206": {
+      "label": "[Optional] Please indicate whether the provider is interested in enrolling with any of the following payers:",
+      "source": ""
+    },
+    "1215659907352651": {
+      "label": "What help do you need from the Marketing Team?",
+      "source": ""
+    },
+    "1215660137683214": {
+      "label": "What help do you need from the Community Team?",
+      "source": ""
+    },
+    "1215659907315969": {
+      "label": "What issue is the customer encountering?",
+      "source": ""
+    },
+    "1215659752352889": {
+      "label": "What type of Prior Authorization support do you need?",
+      "source": ""
+    },
+    "1215659752352893": {
+      "label": "What support do you need with respect with Prior Authorizations?",
+      "source": ""
+    },
+    "1215659752352897": {
+      "label": "Has the provider confirmed prior authorization through Alma?",
+      "source": ""
+    },
+    "1215659752352901": {
+      "label": "Has the provider already submitted at least one claim with psych testing codes for this client?",
+      "source": ""
+    },
+    "1215659752352907": {
+      "label": "Please outline what support you need from the CSS Team.",
+      "source": ""
+    },
+    "1215659752352911": {
+      "label": "Is your support request related to credentialing or an onboarding Issue?",
+      "source": ""
+    },
+    "1215659752352915": {
+      "label": "What help do you need from the Onboarding-Activation Team?",
+      "source": ""
+    },
+    "1215660137673628": {
+      "label": "What is the provider's name?",
+      "source": ""
+    },
+    "1215660137673630": {
+      "label": "What is the provider's email?",
+      "source": ""
+    },
+    "1215660137673634": {
+      "label": "What help do you need from the Credentialing Team?",
+      "source": ""
+    },
+    "1215660137673638": {
+      "label": "What help do you need from the Team Leads?",
+      "source": ""
+    },
+    "1215660137673646": {
+      "label": "What general credentialing questions do you have?",
+      "source": ""
+    },
+    "1215660171831772": {
+      "label": "Please outline what you need the Credentialing or Onboarding team to do.",
+      "source": ""
+    },
+    "1215660171831774": {
+      "label": "If your request relates to a particular provider, where are they in the process of getting credentialed?",
+      "source": ""
+    },
+    "1215659907315973": {
+      "label": "What support do you need with Eligibility or Payment Responsibility Disputes?",
+      "source": ""
+    },
+    "1215659907315977": {
+      "label": "Why is the provider or client requesting that Alma complete a new eligibility check?",
+      "source": ""
+    },
+    "1215659907315983": {
+      "label": "Provide further context to the customer's request for a new eligibility check.",
+      "source": ""
+    },
+    "1215659907315985": {
+      "label": "Have you attempted to trigger an eligibility check via the Alma Portal?",
+      "source": ""
+    },
+    "1215659907315989": {
+      "label": "Please outline why you were not able to use the portal to self serve using the internal tool",
+      "source": ""
+    },
+    "1215659907315994": {
+      "label": "What information do you need?",
+      "source": ""
+    },
+    "1215660137649286": {
+      "label": "Total Amount Invoiced",
+      "source": ""
+    },
+    "1215660137649288": {
+      "label": "What is the client's payment responsibility as confirmed by the ERA for the DOS, if applicable?",
+      "source": ""
+    },
+    "1215660137649290": {
+      "label": "Please paste an EOB or Call Reference # confirming an EC error",
+      "source": ""
+    },
+    "1215660137649292": {
+      "label": "Is this related to an EC Automation Error?",
+      "source": ""
+    },
+    "1215660137649299": {
+      "label": "What exception is being requested?",
+      "source": ""
+    },
+    "1215660137649306": {
+      "label": "Please paste an EOB or Call Reference # confirming an EC error",
+      "source": ""
+    },
+    "1215660137649308": {
+      "label": "What was the initial trigger for this request?",
+      "source": ""
+    },
+    "1215660137649313": {
+      "label": "Who requested this exception?",
+      "source": ""
+    },
+    "1215660171800228": {
+      "label": "Was the exception approved in writing by provider? If not, please stop here and make sure you have provider consent.",
+      "source": ""
+    },
+    "1215660171800234": {
+      "label": "Adjust Invoice Options",
+      "source": ""
+    },
+    "1215660171800239": {
+      "label": "What are the last 4 digits of the client's card on file?",
+      "source": ""
+    },
+    "1215660171800241": {
+      "label": "Have all claim responses (ERAs) been received",
+      "source": ""
+    },
+    "1215660171800245": {
+      "label": "Please paste the claims id(s) associated with the impacted claims.",
+      "source": ""
+    },
+    "1215660171800249": {
+      "label": "What steps have you taken?",
+      "source": ""
+    },
+    "1215660171800252": {
+      "label": "Confirm the details that should be included in the internal notes of the new eligibility check.",
+      "source": ""
+    },
+    "1215659907334615": {
+      "label": "What support do you need with Claim Submission Adjustments?",
+      "source": ""
+    },
+    "1215659907334619": {
+      "label": "What is the state, date of service (DOS), CPT code(s) and ICD code(s) needed?",
+      "source": ""
+    },
+    "1215659907334623": {
+      "label": "Please outline what support you need regarding this duplicate payment.",
+      "source": ""
+    },
+    "1215659907334627": {
+      "label": "What post-submission adjustment action do you need support with?",
+      "source": ""
+    },
+    "1215659907334631": {
+      "label": "What do they need to change?",
+      "source": ""
+    },
+    "1215659907334637": {
+      "label": "What is the state, date of service, CPT code(s) and ICD code(s) needed?",
+      "source": ""
+    },
+    "1215659907334641": {
+      "label": "Cancel a Claim Options",
+      "source": ""
+    },
+    "1215660171818964": {
+      "label": "Has the provider been paid for any visits yet?",
+      "source": ""
+    },
+    "1215660171818968": {
+      "label": "Please list the DOS status so we know what is and is not yet back from the insurance company.",
+      "source": ""
+    },
+    "1215660171818972": {
+      "label": "Has the provider been paid for any visits yet?",
+      "source": ""
+    },
+    "1215660171818976": {
+      "label": "Please list the DOS status so we know what is and is not yet back from the insurance company.",
+      "source": ""
+    },
+    "1215660171818980": {
+      "label": "Does the client have new insurance? Please ask the provider/client if you are unsure.",
+      "source": ""
+    },
+    "1215660171818985": {
+      "label": "Will the provider and client be moving to cash-pay for the affected DOS?",
+      "source": ""
+    },
+    "1215660171818991": {
+      "label": "Has the provider been paid for any visits yet?",
+      "source": ""
+    },
+    "1215660171818995": {
+      "label": "Please list the DOS status so we know what is and is not yet back from the insurance company.",
+      "source": ""
+    },
+    "1215659980425244": {
+      "label": "Please list the following information associated with the claim that needs to be cancelled: Date of Service, CPT Code, & Amount Billed",
+      "source": ""
+    },
+    "1215659980425248": {
+      "label": "Please indicate if you first need an eligibility check completed in order to reprocess this claim",
+      "source": ""
+    },
+    "1215659980425252": {
+      "label": "Please outline the date(s) of service that need to be reprocessed",
+      "source": ""
+    },
+    "1215659980425254": {
+      "label": "Please outline the reason needed for reprocessing",
+      "source": ""
+    },
+    "1215659980425258": {
+      "label": "Please Outline What EAP Support you Need",
+      "source": ""
+    },
+    "1215659980425262": {
+      "label": "What is the state, date of service (DOS), CPT code(s) and ICD code(s) needed?",
+      "source": ""
+    },
+    "1215659980425266": {
+      "label": "Duplicate of What is the state, date of service (DOS), CPT code(s) and ICD code(s) needed?",
+      "source": ""
+    },
+    "1215659980425269": {
+      "label": "Have all claim responses (ERAs) been received?",
+      "source": ""
+    },
+    "1215659752352885": {
+      "label": "Please paste the claims ids associated with the impacted claim(s)",
+      "source": ""
+    },
+    "1215660171800258": {
+      "label": "What support do you need with Payment Issues or Accommodations?",
+      "source": ""
+    },
+    "1215659752344275": {
+      "label": "Outline what support you need regarding the held payment",
+      "source": ""
+    },
+    "1215659752344279": {
+      "label": "What is the reason for the payment plan request?",
+      "source": ""
+    },
+    "1215659752344284": {
+      "label": "What is the total amount of money that we expect to collect after the payment plan is complete?",
+      "source": ""
+    },
+    "1215659752344286": {
+      "label": "List each date of service (DOS) and the associated invoice amount in this format: MM/DD/YYYY - $XX",
+      "source": ""
+    },
+    "1215659752344288": {
+      "label": "What payment plan cadence did the client request?",
+      "source": ""
+    },
+    "1215659752344293": {
+      "label": "What day should the payment plan start?",
+      "source": ""
+    },
+    "1215659752344297": {
+      "label": "Please outline why the provider is requesting a Deduction Cadence",
+      "source": ""
+    },
+    "1215659752344299": {
+      "label": "Please outline what cadence the provider is requesting",
+      "source": ""
+    },
+    "1215659752344303": {
+      "label": "Please outline what support you need from the Payment Investigation (PI) Team",
+      "source": ""
+    },
+    "1215660171831779": {
+      "label": "Insurance Payer",
+      "source": ""
+    },
+    "1215659907352657": {
+      "label": "What is the Subject of this request?\n[FIRST NAME - request or question]",
+      "source": "template:{agent.first} - {ticket.subject}"
+    },
+    "1215659907352659": {
+      "label": "Please outline the reason that you need support from our cross-functional partners.",
+      "source": ""
+    }
+  },
+  "asana_custom_fields": {
+    "1215659907172325": {
+      "label": "Email address",
+      "gid": ""
+    },
+    "1215660137647974": {
+      "label": "Please list the impacted client ID",
+      "gid": "1211592438260456"
+    },
+    "1215660137647976": {
+      "label": "Please link the client's Alma Profile Claims Page URL",
+      "gid": "1212248110002439"
+    },
+    "1215660137647980": {
+      "label": "Please list the impacted provider ID",
+      "gid": "1211592438260454"
+    },
+    "1215660137647982": {
+      "label": "If this relates to a specific Zendesk ticket, please provide the Zendesk ticket link",
+      "gid": ""
+    },
+    "1215660137647984": {
+      "label": "What level of urgency should this task be completed with?",
+      "gid": "1203503782256889"
+    },
+    "1215660137647988": {
+      "label": "Why is this an Urgent Request?",
+      "gid": "1212203302372068"
+    },
+    "1215660137647992": {
+      "label": "Does this request need to be completed on the same day?",
+      "gid": "1212272105174269"
+    },
+    "1215660137647998": {
+      "label": "What type of Support Request is this?",
+      "gid": ""
+    },
+    "1215659752356101": {
+      "label": "What type of Business Support need is this?",
+      "gid": "1211995225261897"
+    },
+    "1215659752356105": {
+      "label": "Please outline what support you need from the Accounting Team",
+      "gid": "1206284979514592"
+    },
+    "1215659752356112": {
+      "label": "If relevant, please link to the client’s insurance portal",
+      "gid": ""
+    },
+    "1215659752356116": {
+      "label": "If relevant, please link to the client’s insurance portal",
+      "gid": ""
+    },
+    "1215659752356121": {
+      "label": "What is the provider's first and last name?",
+      "gid": ""
+    },
+    "1215659752356125": {
+      "label": "What help do you need from the Sales Team?",
+      "gid": "1203511663653756"
+    },
+    "1215659752356129": {
+      "label": "Salesforce link of referee",
+      "gid": ""
+    },
+    "1215659752363299": {
+      "label": "Salesforce link of referrer",
+      "gid": ""
+    },
+    "1215659752363301": {
+      "label": "If we’re asked to honor a referral, did the referee confirm that they were referred?",
+      "gid": ""
+    },
+    "1215659752363307": {
+      "label": "Is the referee’s start date more than 60 days ago?",
+      "gid": ""
+    },
+    "1215659752363311": {
+      "label": "Salesforce link of referee",
+      "gid": ""
+    },
+    "1215659752363313": {
+      "label": "Salesforce link of referrer",
+      "gid": ""
+    },
+    "1215659752363315": {
+      "label": "Is the referee’s profile live or did the referee submit a claim?",
+      "gid": ""
+    },
+    "1215659752363321": {
+      "label": "Salesforce link of the provider",
+      "gid": ""
+    },
+    "1215659752363326": {
+      "label": "Please outline the provider's degree type (MA / NP / PhD / MD).",
+      "gid": ""
+    },
+    "1215660137683190": {
+      "label": "Please outline what state(s) the provider is licensed in.",
+      "gid": ""
+    },
+    "1215660137683192": {
+      "label": "Which insurance providers is the provider currently credentialed with?",
+      "gid": ""
+    },
+    "1215660137683200": {
+      "label": "Please outline if they are a Monthly or Annual provider.",
+      "gid": ""
+    },
+    "1215660137683204": {
+      "label": "Please outline the provider's current membership start date?",
+      "gid": ""
+    },
+    "1215660137683206": {
+      "label": "[Optional] Please indicate whether the provider is interested in enrolling with any of the following payers:",
+      "gid": ""
+    },
+    "1215659907352651": {
+      "label": "What help do you need from the Marketing Team?",
+      "gid": ""
+    },
+    "1215660137683214": {
+      "label": "What help do you need from the Community Team?",
+      "gid": ""
+    },
+    "1215659907315969": {
+      "label": "What issue is the customer encountering?",
+      "gid": "1211842503151205"
+    },
+    "1215659752352889": {
+      "label": "What type of Prior Authorization support do you need?",
+      "gid": "1212158013163258"
+    },
+    "1215659752352893": {
+      "label": "What support do you need with respect with Prior Authorizations?",
+      "gid": ""
+    },
+    "1215659752352897": {
+      "label": "Has the provider confirmed prior authorization through Alma?",
+      "gid": ""
+    },
+    "1215659752352901": {
+      "label": "Has the provider already submitted at least one claim with psych testing codes for this client?",
+      "gid": ""
+    },
+    "1215659752352907": {
+      "label": "Please outline what support you need from the CSS Team.",
+      "gid": ""
+    },
+    "1215659752352911": {
+      "label": "Is your support request related to credentialing or an onboarding Issue?",
+      "gid": "1212382922556002"
+    },
+    "1215659752352915": {
+      "label": "What help do you need from the Onboarding-Activation Team?",
+      "gid": ""
+    },
+    "1215660137673628": {
+      "label": "What is the provider's name?",
+      "gid": ""
+    },
+    "1215660137673630": {
+      "label": "What is the provider's email?",
+      "gid": ""
+    },
+    "1215660137673634": {
+      "label": "What help do you need from the Credentialing Team?",
+      "gid": ""
+    },
+    "1215660137673638": {
+      "label": "What help do you need from the Team Leads?",
+      "gid": ""
+    },
+    "1215660137673646": {
+      "label": "What general credentialing questions do you have?",
+      "gid": ""
+    },
+    "1215660171831772": {
+      "label": "Please outline what you need the Credentialing or Onboarding team to do.",
+      "gid": ""
+    },
+    "1215660171831774": {
+      "label": "If your request relates to a particular provider, where are they in the process of getting credentialed?",
+      "gid": ""
+    },
+    "1215659907315973": {
+      "label": "What support do you need with Eligibility or Payment Responsibility Disputes?",
+      "gid": "1211842970049778"
+    },
+    "1215659907315977": {
+      "label": "Why is the provider or client requesting that Alma complete a new eligibility check?",
+      "gid": ""
+    },
+    "1215659907315983": {
+      "label": "Provide further context to the customer's request for a new eligibility check.",
+      "gid": ""
+    },
+    "1215659907315985": {
+      "label": "Have you attempted to trigger an eligibility check via the Alma Portal?",
+      "gid": "1212478748057516"
+    },
+    "1215659907315989": {
+      "label": "Please outline why you were not able to use the portal to self serve using the internal tool",
+      "gid": "1212478748057520"
+    },
+    "1215659907315994": {
+      "label": "What information do you need?",
+      "gid": ""
+    },
+    "1215660137649286": {
+      "label": "Total Amount Invoiced",
+      "gid": ""
+    },
+    "1215660137649288": {
+      "label": "What is the client's payment responsibility as confirmed by the ERA for the DOS, if applicable?",
+      "gid": ""
+    },
+    "1215660137649290": {
+      "label": "Please paste an EOB or Call Reference # confirming an EC error",
+      "gid": ""
+    },
+    "1215660137649292": {
+      "label": "Is this related to an EC Automation Error?",
+      "gid": ""
+    },
+    "1215660137649299": {
+      "label": "What exception is being requested?",
+      "gid": ""
+    },
+    "1215660137649306": {
+      "label": "Please paste an EOB or Call Reference # confirming an EC error",
+      "gid": ""
+    },
+    "1215660137649308": {
+      "label": "What was the initial trigger for this request?",
+      "gid": ""
+    },
+    "1215660137649313": {
+      "label": "Who requested this exception?",
+      "gid": ""
+    },
+    "1215660171800228": {
+      "label": "Was the exception approved in writing by provider? If not, please stop here and make sure you have provider consent.",
+      "gid": ""
+    },
+    "1215660171800234": {
+      "label": "Adjust Invoice Options",
+      "gid": ""
+    },
+    "1215660171800239": {
+      "label": "What are the last 4 digits of the client's card on file?",
+      "gid": ""
+    },
+    "1215660171800241": {
+      "label": "Have all claim responses (ERAs) been received",
+      "gid": "1213593060684045"
+    },
+    "1215660171800245": {
+      "label": "Please paste the claims id(s) associated with the impacted claims.",
+      "gid": "1211775620155228"
+    },
+    "1215660171800249": {
+      "label": "What steps have you taken?",
+      "gid": ""
+    },
+    "1215660171800252": {
+      "label": "Confirm the details that should be included in the internal notes of the new eligibility check.",
+      "gid": ""
+    },
+    "1215659907334615": {
+      "label": "What support do you need with Claim Submission Adjustments?",
+      "gid": "1211842503151217"
+    },
+    "1215659907334619": {
+      "label": "What is the state, date of service (DOS), CPT code(s) and ICD code(s) needed?",
+      "gid": ""
+    },
+    "1215659907334623": {
+      "label": "Please outline what support you need regarding this duplicate payment.",
+      "gid": ""
+    },
+    "1215659907334627": {
+      "label": "What post-submission adjustment action do you need support with?",
+      "gid": "1211842970049786"
+    },
+    "1215659907334631": {
+      "label": "What do they need to change?",
+      "gid": ""
+    },
+    "1215659907334637": {
+      "label": "What is the state, date of service, CPT code(s) and ICD code(s) needed?",
+      "gid": ""
+    },
+    "1215659907334641": {
+      "label": "Cancel a Claim Options",
+      "gid": ""
+    },
+    "1215660171818964": {
+      "label": "Has the provider been paid for any visits yet?",
+      "gid": ""
+    },
+    "1215660171818968": {
+      "label": "Please list the DOS status so we know what is and is not yet back from the insurance company.",
+      "gid": ""
+    },
+    "1215660171818972": {
+      "label": "Has the provider been paid for any visits yet?",
+      "gid": ""
+    },
+    "1215660171818976": {
+      "label": "Please list the DOS status so we know what is and is not yet back from the insurance company.",
+      "gid": ""
+    },
+    "1215660171818980": {
+      "label": "Does the client have new insurance? Please ask the provider/client if you are unsure.",
+      "gid": ""
+    },
+    "1215660171818985": {
+      "label": "Will the provider and client be moving to cash-pay for the affected DOS?",
+      "gid": ""
+    },
+    "1215660171818991": {
+      "label": "Has the provider been paid for any visits yet?",
+      "gid": ""
+    },
+    "1215660171818995": {
+      "label": "Please list the DOS status so we know what is and is not yet back from the insurance company.",
+      "gid": ""
+    },
+    "1215659980425244": {
+      "label": "Please list the following information associated with the claim that needs to be cancelled: Date of Service, CPT Code, & Amount Billed",
+      "gid": ""
+    },
+    "1215659980425248": {
+      "label": "Please indicate if you first need an eligibility check completed in order to reprocess this claim",
+      "gid": "1212478748057526"
+    },
+    "1215659980425252": {
+      "label": "Please outline the date(s) of service that need to be reprocessed",
+      "gid": ""
+    },
+    "1215659980425254": {
+      "label": "Please outline the reason needed for reprocessing",
+      "gid": ""
+    },
+    "1215659980425258": {
+      "label": "Please Outline What EAP Support you Need",
+      "gid": "1213000779354909"
+    },
+    "1215659980425262": {
+      "label": "What is the state, date of service (DOS), CPT code(s) and ICD code(s) needed?",
+      "gid": ""
+    },
+    "1215659980425266": {
+      "label": "Duplicate of What is the state, date of service (DOS), CPT code(s) and ICD code(s) needed?",
+      "gid": ""
+    },
+    "1215659980425269": {
+      "label": "Have all claim responses (ERAs) been received?",
+      "gid": "1213593060684045"
+    },
+    "1215659752352885": {
+      "label": "Please paste the claims ids associated with the impacted claim(s)",
+      "gid": "1211775620155228"
+    },
+    "1215660171800258": {
+      "label": "What support do you need with Payment Issues or Accommodations?",
+      "gid": "1211842503151211"
+    },
+    "1215659752344275": {
+      "label": "Outline what support you need regarding the held payment",
+      "gid": ""
+    },
+    "1215659752344279": {
+      "label": "What is the reason for the payment plan request?",
+      "gid": "1210980298143874"
+    },
+    "1215659752344284": {
+      "label": "What is the total amount of money that we expect to collect after the payment plan is complete?",
+      "gid": ""
+    },
+    "1215659752344286": {
+      "label": "List each date of service (DOS) and the associated invoice amount in this format: MM/DD/YYYY - $XX",
+      "gid": ""
+    },
+    "1215659752344288": {
+      "label": "What payment plan cadence did the client request?",
+      "gid": ""
+    },
+    "1215659752344293": {
+      "label": "What day should the payment plan start?",
+      "gid": ""
+    },
+    "1215659752344297": {
+      "label": "Please outline why the provider is requesting a Deduction Cadence",
+      "gid": ""
+    },
+    "1215659752344299": {
+      "label": "Please outline what cadence the provider is requesting",
+      "gid": ""
+    },
+    "1215659752344303": {
+      "label": "Please outline what support you need from the Payment Investigation (PI) Team",
+      "gid": ""
+    },
+    "1215660171831779": {
+      "label": "Insurance Payer",
+      "gid": "1200080473903425"
+    },
+    "1215659907352657": {
+      "label": "What is the Subject of this request?\n[FIRST NAME - request or question]",
+      "gid": ""
+    },
+    "1215659907352659": {
+      "label": "Please outline the reason that you need support from our cross-functional partners.",
+      "gid": ""
+    }
+  },
+  "enum_value_map": {},
+  "questions": [
+    {
+      "id": "1215659907172325",
+      "label": "Email address",
+      "type": "email",
+      "required": true
+    },
+    {
+      "id": "1215659907172327",
+      "label": "Client, Provider, & Ticket Information IDs",
+      "type": "heading",
+      "required": false
+    },
+    {
+      "id": "1215660137647972",
+      "label": "Client Information",
+      "type": "heading",
+      "required": false
+    },
+    {
+      "id": "1215660137647974",
+      "label": "Please list the impacted client ID",
+      "type": "text",
+      "required": true,
+      "help": "If there is no applicable client ID, please write n/a"
+    },
+    {
+      "id": "1215660137647976",
+      "label": "Please link the client's Alma Profile Claims Page URL",
+      "type": "text",
+      "required": true,
+      "help": "If not applicable, please put \"n/a\""
+    },
+    {
+      "id": "1215660137647978",
+      "label": "Provider & Ticket Information",
+      "type": "heading",
+      "required": false
+    },
+    {
+      "id": "1215660137647980",
+      "label": "Please list the impacted provider ID",
+      "type": "text",
+      "required": true,
+      "help": "If there is no applicable provider ID, please write n/a"
+    },
+    {
+      "id": "1215660137647982",
+      "label": "If this relates to a specific Zendesk ticket, please provide the Zendesk ticket link",
+      "type": "text",
+      "required": true,
+      "help": "If there is no applicable ticket URL, please write n/a. Link all relevant tickets if there is more than one."
+    },
+    {
+      "id": "1215660137647984",
+      "label": "What level of urgency should this task be completed with?",
+      "type": "select",
+      "required": true,
+      "help": "Normal: 2 business days\nUrgent: 1 business day\n\nNote: For a task to meet Urgent criteria, one or more of the following must be true:\n    The provider indicates clear churn risk\n    Continuity of care is being disrupted (e.g., provider cannot deliver care/client cannot receive care due to a blocker on Alma’s end)",
+      "options": [
+        {
+          "id": "1215660137647986",
+          "label": "Urgent"
+        },
+        {
+          "id": "1215660137647995",
+          "label": "Normal"
+        }
+      ],
+      "branches": [
+        {
+          "when": "1215660137647986",
+          "fields": [
+            {
+              "id": "1215660137647988",
+              "label": "Why is this an Urgent Request?",
+              "type": "select",
+              "required": true,
+              "options": [
+                {
+                  "id": "1215660137647990",
+                  "label": "The provider indicates clear churn risk"
+                },
+                {
+                  "id": "1215660137647991",
+                  "label": "Continuity of care is being disrupted (e.g., provider cannot deliver care/client cannot receive care due to a blocker on Alma's end)"
+                }
+              ]
+            },
+            {
+              "id": "1215660137647992",
+              "label": "Does this request need to be completed on the same day?",
+              "type": "select",
+              "required": false,
+              "help": "Note: Only select this field if your request meets the criteria for same-day completion. \nExamples:\n    A session scheduled for today is directly impacted and/or cannot proceed\n    A customer has been experiencing an ongoing issue that has resulted in a continuous blocker(s) and/or escalation \n        e.g., a portal bug has blocked a provider's claim submission ability for 2+ weeks, resulting in care being paused, severe ongoing escalation\n\nOtherwise, do not select any option from this drop-down.",
+              "options": [
+                {
+                  "id": "1215660137647994",
+                  "label": "Same Day Urgent Request"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1215660137647996",
+      "label": "The Following Section Outlines Support Request Needs",
+      "type": "heading",
+      "required": false
+    },
+    {
+      "id": "1215660137647998",
+      "label": "What type of Support Request is this?",
+      "type": "select",
+      "required": true,
+      "help": "“RCM” includes any request related to claims, eligibility, credentialing, and/or onboarding.\n\n“Business Operations” includes any request related to accounting, sales, community, and/or marketing.",
+      "options": [
+        {
+          "id": "1215660137648000",
+          "label": "RCM Related"
+        },
+        {
+          "id": "1215659752356099",
+          "label": "Business Operations Related"
+        }
+      ],
+      "branches": [
+        {
+          "when": "1215659752356099",
+          "fields": [
+            {
+              "id": "1215659752356101",
+              "label": "What type of Business Support need is this?",
+              "type": "select",
+              "required": true,
+              "options": [
+                {
+                  "id": "1215659752356103",
+                  "label": "Accounting Team Support"
+                },
+                {
+                  "id": "1215659752356123",
+                  "label": "Sales Team Support"
+                },
+                {
+                  "id": "1215660137683212",
+                  "label": "Community Team Support"
+                },
+                {
+                  "id": "1215659907352649",
+                  "label": "Marketing Team Support"
+                }
+              ],
+              "branches": [
+                {
+                  "when": "1215659752356103",
+                  "fields": [
+                    {
+                      "id": "1215659752356105",
+                      "label": "Please outline what support you need from the Accounting Team",
+                      "type": "select",
+                      "required": false,
+                      "options": [
+                        {
+                          "id": "1215659752356107",
+                          "label": "Send direct deposit update link for payouts"
+                        },
+                        {
+                          "id": "1215659752356108",
+                          "label": "Payout question (cash pay or insurance)"
+                        },
+                        {
+                          "id": "1215659752356109",
+                          "label": "Update a provider’s information for tax purposes"
+                        },
+                        {
+                          "id": "1215659752356110",
+                          "label": "Search for a check or deposit"
+                        },
+                        {
+                          "id": "1215659752356114",
+                          "label": "Something else"
+                        },
+                        {
+                          "id": "1215659752356118",
+                          "label": "MSM Question/Request"
+                        },
+                        {
+                          "id": "1215659752356119",
+                          "label": "Tax Season Question"
+                        },
+                        {
+                          "id": "1215659752356120",
+                          "label": "Stripe question"
+                        }
+                      ],
+                      "branches": [
+                        {
+                          "when": "1215659752356110",
+                          "fields": [
+                            {
+                              "id": "1215659752356112",
+                              "label": "If relevant, please link to the client’s insurance portal",
+                              "type": "textarea",
+                              "required": false
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215659752356114",
+                          "fields": [
+                            {
+                              "id": "1215659752356116",
+                              "label": "If relevant, please link to the client’s insurance portal",
+                              "type": "text",
+                              "required": false
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "1215659752356121",
+                      "label": "What is the provider's first and last name?",
+                      "type": "text",
+                      "required": false
+                    }
+                  ]
+                },
+                {
+                  "when": "1215659752356123",
+                  "fields": [
+                    {
+                      "id": "1215659752356125",
+                      "label": "What help do you need from the Sales Team?",
+                      "type": "select",
+                      "required": false,
+                      "help": "See https://app.getguru.com/card/caKGEBAi/Verifying-provider-referrals- before submitting a request.\n\nEnsure that referral criteria are met before checking on the status of a referral payout :\n- Are the referee and referrer linked in Salesforce?\n- Is the referee's start date more than 60 days ago?\n- Is the referee's profile live or did the referee submit a claim?",
+                      "options": [
+                        {
+                          "id": "1215659752356127",
+                          "label": "Honor a referral"
+                        },
+                        {
+                          "id": "1215659752363305",
+                          "label": "Where is my referral payout"
+                        },
+                        {
+                          "id": "1215659752363319",
+                          "label": "Other referral question"
+                        },
+                        {
+                          "id": "1215659752363323",
+                          "label": "Other (no referral questions)"
+                        },
+                        {
+                          "id": "1215659752363324",
+                          "label": "Send membership agreement (no sales call needed)"
+                        }
+                      ],
+                      "branches": [
+                        {
+                          "when": "1215659752356127",
+                          "fields": [
+                            {
+                              "id": "1215659752356129",
+                              "label": "Salesforce link of referee",
+                              "type": "text",
+                              "required": false,
+                              "help": "Who is the provider that was referred? If you can't find their Salesforce profile, add their First + Last Name + Email."
+                            },
+                            {
+                              "id": "1215659752363299",
+                              "label": "Salesforce link of referrer",
+                              "type": "text",
+                              "required": false,
+                              "help": "Who referred a provider? If you can't find their Salesforce profile, add their First + Last Name + Email."
+                            },
+                            {
+                              "id": "1215659752363301",
+                              "label": "If we’re asked to honor a referral, did the referee confirm that they were referred?",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215659752363303",
+                                  "label": "Yes"
+                                },
+                                {
+                                  "id": "1215659752363304",
+                                  "label": "No"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215659752363305",
+                          "fields": [
+                            {
+                              "id": "1215659752363307",
+                              "label": "Is the referee’s start date more than 60 days ago?",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215659752363309",
+                                  "label": "Yes"
+                                },
+                                {
+                                  "id": "1215659752363310",
+                                  "label": "No"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215659752363311",
+                              "label": "Salesforce link of referee",
+                              "type": "text",
+                              "required": false,
+                              "help": "Who is the provider that was referred? If you can't find their Salesforce profile, add their First + Last Name + Email."
+                            },
+                            {
+                              "id": "1215659752363313",
+                              "label": "Salesforce link of referrer",
+                              "type": "text",
+                              "required": false,
+                              "help": "Who referred a provider? If you can't find their Salesforce profile, add their First + Last Name + Email."
+                            },
+                            {
+                              "id": "1215659752363315",
+                              "label": "Is the referee’s profile live or did the referee submit a claim?",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215659752363317",
+                                  "label": "Yes"
+                                },
+                                {
+                                  "id": "1215659752363318",
+                                  "label": "No"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215659752363319",
+                          "fields": [
+                            {
+                              "id": "1215659752363321",
+                              "label": "Salesforce link of the provider",
+                              "type": "text",
+                              "required": false,
+                              "help": "Please provide the provider's Salesforce link here so that our Sales Team can look up the provider's profile. \nNote: the first 3 sub-questions will require access to the Alma portal while the latter 2 sub-questions will require access to Salesforce."
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215659752363324",
+                          "fields": [
+                            {
+                              "id": "1215659752363326",
+                              "label": "Please outline the provider's degree type (MA / NP / PhD / MD).",
+                              "type": "select",
+                              "required": false,
+                              "help": "To help sales correctly locate the most up to date provider information, please outline their degree type. Note, this can be found in the Alma portal",
+                              "options": [
+                                {
+                                  "id": "1215659752363328",
+                                  "label": "MA"
+                                },
+                                {
+                                  "id": "1215659752363329",
+                                  "label": "NP"
+                                },
+                                {
+                                  "id": "1215660137683188",
+                                  "label": "PhD"
+                                },
+                                {
+                                  "id": "1215660137683189",
+                                  "label": "MD"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215660137683190",
+                              "label": "Please outline what state(s) the provider is licensed in.",
+                              "type": "text",
+                              "required": false,
+                              "help": "To help sales correctly locate the most up to date provider information, please outline their state(s) of licensure(s); note, this can be found in their provider portal."
+                            },
+                            {
+                              "id": "1215660137683192",
+                              "label": "Which insurance providers is the provider currently credentialed with?",
+                              "type": "multiselect",
+                              "required": false,
+                              "help": "To help sales correctly locate the most up to date provider information, please outline which payers the provider is currently licensed with; note, this can be found in their provider portal.",
+                              "options": [
+                                {
+                                  "id": "1215660137683194",
+                                  "label": "Enrolled in Aetna"
+                                },
+                                {
+                                  "id": "1215660137683195",
+                                  "label": "Enrolled in Cigna"
+                                },
+                                {
+                                  "id": "1215660137683196",
+                                  "label": "Enrolled in Confide EAP"
+                                },
+                                {
+                                  "id": "1215660137683197",
+                                  "label": "Enrolled in Carelon"
+                                },
+                                {
+                                  "id": "1215660137683198",
+                                  "label": "Enrolled in Optum Waitlist"
+                                },
+                                {
+                                  "id": "1215660137683199",
+                                  "label": "Enrolled in BCBS"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215660137683200",
+                              "label": "Please outline if they are a Monthly or Annual provider.",
+                              "type": "select",
+                              "required": false,
+                              "help": "To help Sales correctly locate the most up-to-date provider information, please outline their subscription type. Note that this can be found in Salesforce by using the provider's email address and name to look up their records.",
+                              "options": [
+                                {
+                                  "id": "1215660137683202",
+                                  "label": "Monthly"
+                                },
+                                {
+                                  "id": "1215660137683203",
+                                  "label": "Annual"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215660137683204",
+                              "label": "Please outline the provider's current membership start date?",
+                              "type": "date",
+                              "required": false,
+                              "help": "To help sales correctly locate the most up-to-date provider information, please outline their membership start date. This can be found in their provider portal."
+                            },
+                            {
+                              "id": "1215660137683206",
+                              "label": "[Optional] Please indicate whether the provider is interested in enrolling with any of the following payers:",
+                              "type": "multiselect",
+                              "required": false,
+                              "help": "note: interest may be found in documentation around the providers membership or in your email thread with the provider—please outline.",
+                              "options": [
+                                {
+                                  "id": "1215660137683208",
+                                  "label": "Interested in Aetna EAP"
+                                },
+                                {
+                                  "id": "1215660137683209",
+                                  "label": "Interested in Optum EAP"
+                                },
+                                {
+                                  "id": "1215660137683210",
+                                  "label": "Interested in Optum P-EAP"
+                                },
+                                {
+                                  "id": "1215660137683211",
+                                  "label": "Interested in Optum BCC"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "when": "1215659907352649",
+                  "fields": [
+                    {
+                      "id": "1215659907352651",
+                      "label": "What help do you need from the Marketing Team?",
+                      "type": "select",
+                      "required": false,
+                      "help": "The Marketing team helps Alma grow. The team is composed of four sub-teams, listed below. CX support questions are fielded by our Senior Manager of Brand Marketing as most of them are brand-related inquiries.\n\nConsumer Growth - brings clients to Alma.\n\nDemand Generation - supports the Growth team in building awareness among prospective clinicians.\n\nLifecycle and Product Marketing - improves and educates on Alma's member experience.\n\nBrand - improves awareness of Alma for all audiences; includes social media, awareness (not clinical) partnerships, PR, and written content.",
+                      "options": [
+                        {
+                          "id": "1215659907352653",
+                          "label": "Internal - Alma member or client"
+                        },
+                        {
+                          "id": "1215659907352654",
+                          "label": "External - press, marketing, or partnership opportunity"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "when": "1215660137683212",
+                  "fields": [
+                    {
+                      "id": "1215660137683214",
+                      "label": "What help do you need from the Community Team?",
+                      "type": "select",
+                      "required": false,
+                      "help": "The Community Team is responsible for building and supporting the Alma provider community. They are the main moderators in the Community Hub, support the Continued Education Courses (CEs) offering, and plan Alma provider events.\n\nFor more information on Continuing Education courses and which providers are eligible for credits, see the https://app.getguru.com/boards/ckenAGki/Continuing-Education.\n\nYou can find a list of all Alma Events https://events.helloalma.com/. Note that individual events will confirm if the event will be recorded.",
+                      "options": [
+                        {
+                          "id": "1215660137683216",
+                          "label": "Community Hub Bug/Troubleshooting"
+                        },
+                        {
+                          "id": "1215660137683217",
+                          "label": "Events Questions"
+                        },
+                        {
+                          "id": "1215660137683218",
+                          "label": "Education or Continuing Education (CE) Questions"
+                        },
+                        {
+                          "id": "1215660137683219",
+                          "label": "Something else"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "when": "1215660137648000",
+          "fields": [
+            {
+              "id": "1215660137648002",
+              "label": "RCM Support Needs",
+              "type": "heading",
+              "required": false
+            },
+            {
+              "id": "1215659907315969",
+              "label": "What issue is the customer encountering?",
+              "type": "select",
+              "required": true,
+              "help": "Each issue category selected will provide you with a different type of support request. Please ensure you select the most appropriate response relevant to the scenario you're managing.",
+              "options": [
+                {
+                  "id": "1215659907315971",
+                  "label": "Eligibility or Payment Responsibility Disputes"
+                },
+                {
+                  "id": "1215660171800256",
+                  "label": "Payment Issues and Accommodations"
+                },
+                {
+                  "id": "1215659907334613",
+                  "label": "Claim Submission Adjustments"
+                },
+                {
+                  "id": "1215659752352887",
+                  "label": "Prior Authorizations"
+                },
+                {
+                  "id": "1215659752352909",
+                  "label": "Onboarding/Credentialing Issue"
+                }
+              ],
+              "branches": [
+                {
+                  "when": "1215659752352887",
+                  "fields": [
+                    {
+                      "id": "1215659752352889",
+                      "label": "What type of Prior Authorization support do you need?",
+                      "type": "select",
+                      "required": true,
+                      "help": "Psych Testing Prior Authorization requests: \n    These are used in cases where a provider requires a prior authorization before treatment. \n\nPrior Authorization Investigation\n    These sorts of prior authorization requests relate to claim submission success workflows. \n\nThis https://app.getguru.com/card/c549e7ki/Understanding-and-Handling-Prior-Authorization-Requests outlines prior authorization and the workflows related to it.",
+                      "options": [
+                        {
+                          "id": "1215659752352891",
+                          "label": "Psych Testing Prior Authorization Request"
+                        },
+                        {
+                          "id": "1215659752352905",
+                          "label": "Prior Authorization Investigation"
+                        }
+                      ],
+                      "branches": [
+                        {
+                          "when": "1215659752352891",
+                          "fields": [
+                            {
+                              "id": "1215659752352893",
+                              "label": "What support do you need with respect with Prior Authorizations?",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215659752352895",
+                                  "label": "Psych Testing Prior Authorization Request"
+                                }
+                              ],
+                              "branches": [
+                                {
+                                  "when": "1215659752352895",
+                                  "fields": [
+                                    {
+                                      "id": "1215659752352897",
+                                      "label": "Has the provider confirmed prior authorization through Alma?",
+                                      "type": "select",
+                                      "required": false,
+                                      "help": "Providers should request prior authorization before starting psych testing. See the https://app.getguru.com/card/c549e7ki/Understanding-and-Handling-Prior-Authorization-Requests.",
+                                      "options": [
+                                        {
+                                          "id": "1215659752352899",
+                                          "label": "Yes"
+                                        },
+                                        {
+                                          "id": "1215659752352900",
+                                          "label": "No"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "id": "1215659752352901",
+                                      "label": "Has the provider already submitted at least one claim with psych testing codes for this client?",
+                                      "type": "select",
+                                      "required": false,
+                                      "help": "Providers should request prior authorization before starting psych testing. See the https://alma-help.zendesk.com/hc/en-us/articles/4405880779035-Requesting-Prior-Authorization.",
+                                      "options": [
+                                        {
+                                          "id": "1215659752352903",
+                                          "label": "Yes"
+                                        },
+                                        {
+                                          "id": "1215659752352904",
+                                          "label": "No"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215659752352905",
+                          "fields": [
+                            {
+                              "id": "1215659752352907",
+                              "label": "Please outline what support you need from the CSS Team.",
+                              "type": "textarea",
+                              "required": false
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "when": "1215659752352909",
+                  "fields": [
+                    {
+                      "id": "1215659752352911",
+                      "label": "Is your support request related to credentialing or an onboarding Issue?",
+                      "type": "select",
+                      "required": true,
+                      "options": [
+                        {
+                          "id": "1215659752352913",
+                          "label": "Member Onboarding Operations Team Support"
+                        },
+                        {
+                          "id": "1215660137673632",
+                          "label": "Credentialing Support"
+                        }
+                      ],
+                      "branches": [
+                        {
+                          "when": "1215659752352913",
+                          "fields": [
+                            {
+                              "id": "1215659752352915",
+                              "label": "What help do you need from the Onboarding-Activation Team?",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215660137673620",
+                                  "label": "Profile and Headshot Edits"
+                                },
+                                {
+                                  "id": "1215660137673624",
+                                  "label": "Troubleshoot Onboarding Email"
+                                },
+                                {
+                                  "id": "1215660137673625",
+                                  "label": "Check on Status of a Provider's Profile"
+                                },
+                                {
+                                  "id": "1215660137673626",
+                                  "label": "Zoom Email Update Request"
+                                },
+                                {
+                                  "id": "1215660137673627",
+                                  "label": "Something Else"
+                                }
+                              ],
+                              "branches": [
+                                {
+                                  "when": "1215660137673620",
+                                  "fields": [
+                                    {
+                                      "id": "1215660137673622",
+                                      "label": "Link to the provider's updated bio or interview Google Doc",
+                                      "type": "attachment",
+                                      "required": false,
+                                      "help": "Before submitting a request, please refer to these resources:\n- Provider with a start date before 3/28/22: https://app.getguru.com/card/TjRoKK8c/CX-Action-Updating-a-Providers-Profile\n- Provider with a start date after 3/28/22: https://app.getguru.com/card/T58pAznc/Linear-Onboarding-Profile-Updates-Bio-Headshot-and-Interview\n\nNote:\nProfile submissions should follow https://docs.google.com/document/d/1lANb37Izsya2gCzp0LIEyM7tKxL4lQhuT-AoFwi3hFI/edit. Make sure you have confirmed the provider's submission adheres to the character and word count requirements before submitting this request.\n\nHeadshots should not require a form submission. Please see https://app.getguru.com/card/T98pA8zc/Headshot-Updates-Linear-Onboarding to confirm where Onboarding is in the process."
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215660137673628",
+                              "label": "What is the provider's name?",
+                              "type": "text",
+                              "required": false
+                            },
+                            {
+                              "id": "1215660137673630",
+                              "label": "What is the provider's email?",
+                              "type": "text",
+                              "required": false
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215660137673632",
+                          "fields": [
+                            {
+                              "id": "1215660137673634",
+                              "label": "What help do you need from the Credentialing Team?",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215660137673636",
+                                  "label": "Team Lead Support"
+                                },
+                                {
+                                  "id": "1215660137673644",
+                                  "label": "General Credentialing Questions or Request"
+                                }
+                              ],
+                              "branches": [
+                                {
+                                  "when": "1215660137673636",
+                                  "fields": [
+                                    {
+                                      "id": "1215660137673638",
+                                      "label": "What help do you need from the Team Leads?",
+                                      "type": "select",
+                                      "required": false,
+                                      "options": [
+                                        {
+                                          "id": "1215660137673640",
+                                          "label": "Check credentialing status - delayed more than 50 days"
+                                        },
+                                        {
+                                          "id": "1215660137673641",
+                                          "label": "General insurance payer or credentialing questions"
+                                        },
+                                        {
+                                          "id": "1215660137673642",
+                                          "label": "Flag a provider-reported issue with credentials, licensure, or education"
+                                        },
+                                        {
+                                          "id": "1215660137673643",
+                                          "label": "Something Else?"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "when": "1215660137673644",
+                                  "fields": [
+                                    {
+                                      "id": "1215660137673646",
+                                      "label": "What general credentialing questions do you have?",
+                                      "type": "select",
+                                      "required": false,
+                                      "options": [
+                                        {
+                                          "id": "1215660137673648",
+                                          "label": "Question about credentialing requirements"
+                                        },
+                                        {
+                                          "id": "1215660137673649",
+                                          "label": "Turn on insurance tools (within 48 hours)"
+                                        },
+                                        {
+                                          "id": "1215660137673650",
+                                          "label": "Alma portal error"
+                                        },
+                                        {
+                                          "id": "1215660137673651",
+                                          "label": "Update to a provider's credentials, CAQH, re-attestation or info listed on an insurance partner website"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215660171831772",
+                              "label": "Please outline what you need the Credentialing or Onboarding team to do.",
+                              "type": "textarea",
+                              "required": false,
+                              "help": "Please add any further context that will support the Credentialing or Onboarding team's work in assisting the customer."
+                            },
+                            {
+                              "id": "1215660171831774",
+                              "label": "If your request relates to a particular provider, where are they in the process of getting credentialed?",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215660171831776",
+                                  "label": "Has not started the credentialing process"
+                                },
+                                {
+                                  "id": "1215660171831777",
+                                  "label": "Currently getting credentialed"
+                                },
+                                {
+                                  "id": "1215660171831778",
+                                  "label": "Credentialed through Alma"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "when": "1215659907315971",
+                  "fields": [
+                    {
+                      "id": "1215659907315973",
+                      "label": "What support do you need with Eligibility or Payment Responsibility Disputes?",
+                      "type": "select",
+                      "required": true,
+                      "options": [
+                        {
+                          "id": "1215659907315975",
+                          "label": "Re-run the Eligibility Check"
+                        },
+                        {
+                          "id": "1215659907315992",
+                          "label": "The EC and the ERA mismatch"
+                        },
+                        {
+                          "id": "1215660137649297",
+                          "label": "EC Exception Request"
+                        },
+                        {
+                          "id": "1215660171800232",
+                          "label": "Adjust Invoice"
+                        },
+                        {
+                          "id": "1215660171800247",
+                          "label": "COBRA Support"
+                        },
+                        {
+                          "id": "1215660171800254",
+                          "label": "Group Therapy"
+                        },
+                        {
+                          "id": "1215660171800255",
+                          "label": "Client Confirms Authorization of Mental Health Benefits"
+                        }
+                      ],
+                      "branches": [
+                        {
+                          "when": "1215659907315975",
+                          "fields": [
+                            {
+                              "id": "1215659907315977",
+                              "label": "Why is the provider or client requesting that Alma complete a new eligibility check?",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215659907315979",
+                                  "label": "Updated Deductible or Out-of-Pocket Request"
+                                },
+                                {
+                                  "id": "1215659907315980",
+                                  "label": "New/Updated Insurance Details"
+                                },
+                                {
+                                  "id": "1215659907315981",
+                                  "label": "Other"
+                                }
+                              ],
+                              "branches": [
+                                {
+                                  "when": "1215659907315981",
+                                  "fields": [
+                                    {
+                                      "id": "1215659907315983",
+                                      "label": "Provide further context to the customer's request for a new eligibility check.",
+                                      "type": "textarea",
+                                      "required": false
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215659907315985",
+                              "label": "Have you attempted to trigger an eligibility check via the Alma Portal?",
+                              "type": "select",
+                              "required": true,
+                              "help": "The CX team can now trigger ECs directly in the portal. Please review https://app.getguru.com/card/ikyd7eLT/Self-Service-Eligibility-Checks-Disputing-an-Eligibility-Check-, which outlines the steps to complete this process. If you answered \"No\" to this question, please attempt to rerun via the portal instead of submitting a support form.\n\n    Note: for any continuous flip-flopping EC/PR issues, please use Option 1 from the self-service form in the portal (i.e., select: \"My client and I believe the current eligibility status or cost estimate is incorrect\" when impersonating the provider and submitting)",
+                              "options": [
+                                {
+                                  "id": "1215659907315987",
+                                  "label": "Yes"
+                                },
+                                {
+                                  "id": "1215659907315991",
+                                  "label": "No"
+                                }
+                              ],
+                              "branches": [
+                                {
+                                  "when": "1215659907315987",
+                                  "fields": [
+                                    {
+                                      "id": "1215659907315989",
+                                      "label": "Please outline why you were not able to use the portal to self serve using the internal tool",
+                                      "type": "textarea",
+                                      "required": true,
+                                      "help": "Note: we use this comment data to update and improve the internal self-service tool."
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215659907315992",
+                          "fields": [
+                            {
+                              "id": "1215659907315994",
+                              "label": "What information do you need?",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215659907315996",
+                                  "label": "Re-confirm benefits"
+                                },
+                                {
+                                  "id": "1215659907315997",
+                                  "label": "Confirm if client has a deductible"
+                                },
+                                {
+                                  "id": "1215659907315998",
+                                  "label": "Confirm if client met their deductible or out-of-pocket maximum"
+                                },
+                                {
+                                  "id": "1215659907315999",
+                                  "label": "Confirm funding status (self vs fully funded)"
+                                },
+                                {
+                                  "id": "1215660137649285",
+                                  "label": "Confirm if client has a telehealth benefit"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215660137649286",
+                              "label": "Total Amount Invoiced",
+                              "type": "textarea",
+                              "required": false,
+                              "help": "How much was the client invoiced for the session(s) in question?"
+                            },
+                            {
+                              "id": "1215660137649288",
+                              "label": "What is the client's payment responsibility as confirmed by the ERA for the DOS, if applicable?",
+                              "type": "textarea",
+                              "required": false,
+                              "help": "What dollar amount is showing on the returned claim(s) for the dates of service in question?"
+                            },
+                            {
+                              "id": "1215660137649290",
+                              "label": "Please paste an EOB or Call Reference # confirming an EC error",
+                              "type": "text",
+                              "required": false
+                            },
+                            {
+                              "id": "1215660137649292",
+                              "label": "Is this related to an EC Automation Error?",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215660137649294",
+                                  "label": "Yes"
+                                },
+                                {
+                                  "id": "1215660137649295",
+                                  "label": "No"
+                                },
+                                {
+                                  "id": "1215660137649296",
+                                  "label": "Verification Needed"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215660137649297",
+                          "fields": [
+                            {
+                              "id": "1215660137649299",
+                              "label": "What exception is being requested?",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215660137649301",
+                                  "label": "Hold on invoicing until claim processes (Eligible -> Cost-Share Held)"
+                                },
+                                {
+                                  "id": "1215660137649302",
+                                  "label": "Send invoices sooner (Cost-Share Held -> Eligible)"
+                                },
+                                {
+                                  "id": "1215660137649303",
+                                  "label": "Charge as if met deductible (High $ -> Low $)"
+                                },
+                                {
+                                  "id": "1215660137649304",
+                                  "label": "COBRA Coverage (Ineligible -> Eligible)"
+                                },
+                                {
+                                  "id": "1215660137649305",
+                                  "label": "No Medicare/Medicaid issue (Ineligible -> Eligible)"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215660137649306",
+                              "label": "Please paste an EOB or Call Reference # confirming an EC error",
+                              "type": "text",
+                              "required": false
+                            },
+                            {
+                              "id": "1215660137649308",
+                              "label": "What was the initial trigger for this request?",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215660137649310",
+                                  "label": "Client insists"
+                                },
+                                {
+                                  "id": "1215660137649311",
+                                  "label": "Client insists and provided documentation"
+                                },
+                                {
+                                  "id": "1215660137649312",
+                                  "label": "Provider insists"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215660137649313",
+                              "label": "Who requested this exception?",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215660137649315",
+                                  "label": "Provider"
+                                },
+                                {
+                                  "id": "1215660137649316",
+                                  "label": "Client"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215660171800228",
+                              "label": "Was the exception approved in writing by provider? If not, please stop here and make sure you have provider consent.",
+                              "type": "select",
+                              "required": false,
+                              "options": [
+                                {
+                                  "id": "1215660171800230",
+                                  "label": "Yes"
+                                },
+                                {
+                                  "id": "1215660171800231",
+                                  "label": "No"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215660171800232",
+                          "fields": [
+                            {
+                              "id": "1215660171800234",
+                              "label": "Adjust Invoice Options",
+                              "type": "select",
+                              "required": false,
+                              "help": "See https://app.getguru.com/boards/irX8BjLT/CX-CAT-Resources and https://app.getguru.com/card/iLgxd8AT/Module-2-Lifecycle-of-a-Claim- to understand Alma’s claim process and insurance billing tools before submitting a request.\n\nPlease read before making your selection:\nFor invoice adjustments where we must cancel it and deduct from the provider, CAT will not send a Zendesk ticket. Please confirm that the provider understands that they will be deducted the full invoice amount.",
+                              "options": [
+                                {
+                                  "id": "1215660171800236",
+                                  "label": "Deduct invoice from provider payout: The session took place, but the provider collected an invoice outside of Alma and/or wants to absorb the cost"
+                                },
+                                {
+                                  "id": "1215660171800237",
+                                  "label": "Client was double-charged due to an error with Square (one charge in the AP, client shows proof of two charges)"
+                                }
+                              ],
+                              "branches": [
+                                {
+                                  "when": "1215660171800237",
+                                  "fields": [
+                                    {
+                                      "id": "1215660171800239",
+                                      "label": "What are the last 4 digits of the client's card on file?",
+                                      "type": "textarea",
+                                      "required": true
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215660171800241",
+                              "label": "Have all claim responses (ERAs) been received",
+                              "type": "select",
+                              "required": true,
+                              "options": [
+                                {
+                                  "id": "1215660171800243",
+                                  "label": "Yes"
+                                },
+                                {
+                                  "id": "1215660171800244",
+                                  "label": "No"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215660171800245",
+                              "label": "Please paste the claims id(s) associated with the impacted claims.",
+                              "type": "textarea",
+                              "required": true,
+                              "help": "Note: please only past the claims id number (the number after the \"CL-\" prefix) for data validation purposes; please paste them in a list forma—e.g., 1234,5678,9101"
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215660171800247",
+                          "fields": [
+                            {
+                              "id": "1215660171800249",
+                              "label": "What steps have you taken?",
+                              "type": "select",
+                              "required": false,
+                              "help": "See https://app.getguru.com/card/cyR7Ekai/client-How-does-Alma-manage-COBRA-coverage- to complete the steps before submitting this form.\n\nNote: All COB issues should but submitted to CAT as claims may need reprocessing. See https://app.getguru.com/card/c54X6R7i/Handling-Coordination-of-Benefits-COB-Issues before submitting this form.",
+                              "options": [
+                                {
+                                  "id": "1215660171800251",
+                                  "label": "Client sent in COBRA documentation AND CX saved to the COBRA folder"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215660171800252",
+                              "label": "Confirm the details that should be included in the internal notes of the new eligibility check.",
+                              "type": "text",
+                              "required": false,
+                              "help": "If you saved COBRA information to the folder, copy and paste the following template:\n\nCOBRA information is saved in folder XX/XX/XX.\n\nIf the client sent in new insurance details for a resolved Inactive/COB case:\n1. Make sure insurance details are included in an internal note on the Zendesk ticket.\n2. Complete the following template. The EC team will include this in the new EC’s internal note.\n\nComplete new EC\nCOB resolved as of XX/XX/XX. [INSURANCE COMPANY] designated as primary. REF#XXX\n\nIf the client’s COB is resolved and insurance details have not changed:\nComplete the following template. The EC team will include this in the new EC’s internal note.\n\nCOB resolved as of XX/XX/XX. [INSURANCE COMPANY] designated as primary. REF#XXX"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "when": "1215659907334613",
+                  "fields": [
+                    {
+                      "id": "1215659907334615",
+                      "label": "What support do you need with Claim Submission Adjustments?",
+                      "type": "select",
+                      "required": true,
+                      "help": "Review https://app.getguru.com/card/cdGxxyji/Insurance-Claim-Outcomes-Denials-Deductions-and-Adjustments for more information regarding Denials, Deductions, and Adjustments.\n\nNote: “Clarity Questions” are no longer submittable via the Support Form. If you have a “Clarity Question” (i.e., asking the Claims team for insight into a scenario rather than requesting an action from them), please follow the Helpline ➡️  #cx-cat-crossfunctional workflow outlined in https://app.getguru.com/card/iz4KxxgT/CX-Using-the-cxcatcrossfunctional-Slack-Workflow.",
+                      "options": [
+                        {
+                          "id": "1215659907334617",
+                          "label": "Coding Rules/Rejections"
+                        },
+                        {
+                          "id": "1215659907334621",
+                          "label": "Duplicate Payment"
+                        },
+                        {
+                          "id": "1215659907334625",
+                          "label": "Post Submission Adjustments (edit/correct claim, cancel claim, submit new claim, reprocess)"
+                        }
+                      ],
+                      "branches": [
+                        {
+                          "when": "1215659907334617",
+                          "fields": [
+                            {
+                              "id": "1215659907334619",
+                              "label": "What is the state, date of service (DOS), CPT code(s) and ICD code(s) needed?",
+                              "type": "textarea",
+                              "required": false,
+                              "help": "Note: only submit a request if you already have this information from the provider.\n\nPlease use this template:\nState: [enter state that care client received care in]\nDOS: [enter]\nCPT Codes: [enter]\nICD Codes: [enter]"
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215659907334621",
+                          "fields": [
+                            {
+                              "id": "1215659907334623",
+                              "label": "Please outline what support you need regarding this duplicate payment.",
+                              "type": "text",
+                              "required": false
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215659907334625",
+                          "fields": [
+                            {
+                              "id": "1215659907334627",
+                              "label": "What post-submission adjustment action do you need support with?",
+                              "type": "select",
+                              "required": true,
+                              "options": [
+                                {
+                                  "id": "1215659907334629",
+                                  "label": "Edit/Correct Claim"
+                                },
+                                {
+                                  "id": "1215659907334639",
+                                  "label": "Cancel Claim"
+                                },
+                                {
+                                  "id": "1215659980425242",
+                                  "label": "Submit New Claim To Old Insurance"
+                                },
+                                {
+                                  "id": "1215659980425246",
+                                  "label": "Reprocess Claim(s)"
+                                },
+                                {
+                                  "id": "1215659980425256",
+                                  "label": "Correct an EAP Claim"
+                                }
+                              ],
+                              "branches": [
+                                {
+                                  "when": "1215659907334629",
+                                  "fields": [
+                                    {
+                                      "id": "1215659907334631",
+                                      "label": "What do they need to change?",
+                                      "type": "select",
+                                      "required": true,
+                                      "options": [
+                                        {
+                                          "id": "1215659907334633",
+                                          "label": "Provider needs to fix the state care was rendered in"
+                                        },
+                                        {
+                                          "id": "1215659907334634",
+                                          "label": "Provider needs to add, remove, or replace a CPT code(s) or ICD code(s)"
+                                        },
+                                        {
+                                          "id": "1215659907334635",
+                                          "label": "Correct Date of Service"
+                                        },
+                                        {
+                                          "id": "1215659907334636",
+                                          "label": "Change Modifiers"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "id": "1215659907334637",
+                                      "label": "What is the state, date of service, CPT code(s) and ICD code(s) needed?",
+                                      "type": "textarea",
+                                      "required": true,
+                                      "help": "Note: only submit a request if you already have this information from the provider.\n\nPlease use this template:\nState: [enter state that care client received care in]\nDOS: [enter]\nCPT Codes: [enter]\nICD Codes: [enter]\nModifiers: [enter]"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "when": "1215659907334639",
+                                  "fields": [
+                                    {
+                                      "id": "1215659907334641",
+                                      "label": "Cancel a Claim Options",
+                                      "type": "select",
+                                      "required": false,
+                                      "help": "See https://app.getguru.com/boards/irX8BjLT/CX-CAT-Resources and https://app.getguru.com/card/iLgxd8AT/Module-2-Lifecycle-of-a-Claim- to understand Alma’s claim process and insurance billing tools before submitting a request.\n\nPlease read and communicate these details to the provider/client:\nIf invoices have been issued, the client's invoices will be refunded or canceled, depending on the invoice status. Since the claim will be canceled, it will no longer appear in the provider's Alma portal.",
+                                      "options": [
+                                        {
+                                          "id": "1215659907334643",
+                                          "label": "Provider submitted a claim for a session that did not take place"
+                                        },
+                                        {
+                                          "id": "1215660171818970",
+                                          "label": "Provider/Client confirmed insurance coverage expired for a date of service that already happened"
+                                        },
+                                        {
+                                          "id": "1215660171818978",
+                                          "label": "Provider submitted a duplicate claim for the same date of service"
+                                        },
+                                        {
+                                          "id": "1215660171818989",
+                                          "label": "Provider submitted claims under incorrect state, is not credentialed with client's insurance payer in the state where client received care"
+                                        }
+                                      ],
+                                      "branches": [
+                                        {
+                                          "when": "1215659907334643",
+                                          "fields": [
+                                            {
+                                              "id": "1215660171818964",
+                                              "label": "Has the provider been paid for any visits yet?",
+                                              "type": "select",
+                                              "required": false,
+                                              "help": "Read before continuing:\nCheck to see if there is a date under \"Paid Provider On\" in the Alma Portal. If so, the provider was paid for that particular session.\n\nIf Yes, we will deduct the payment from the provider.\nIf No, they will not be paid for this visit as it will be canceled.\n\nPlease communicate the above to the provider, as CAT will not send a Zendesk ticket.",
+                                              "options": [
+                                                {
+                                                  "id": "1215660171818966",
+                                                  "label": "yes"
+                                                },
+                                                {
+                                                  "id": "1215660171818967",
+                                                  "label": "no"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "id": "1215660171818968",
+                                              "label": "Please list the DOS status so we know what is and is not yet back from the insurance company.",
+                                              "type": "textarea",
+                                              "required": false,
+                                              "help": "CAT cannot take action on claims until they have returned from insurance. This is indicated by an ERA posted in the Alma Portal.\n\nCAT will take action on what they can now and will wait to take action on what has not yet returned. Please communicate this with the provider.\n\nUse the template:\nDOS 1 - [Returned/not yet returned]\nDOS 2 - [Returned/not yet returned]"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "when": "1215660171818970",
+                                          "fields": [
+                                            {
+                                              "id": "1215660171818972",
+                                              "label": "Has the provider been paid for any visits yet?",
+                                              "type": "select",
+                                              "required": false,
+                                              "help": "Read before continuing:\nCheck to see if there is a date under \"Paid Provider On\" in the Alma Portal. If so, the provider was paid for that particular session.\n\nIf Yes, we will deduct the payment from the provider.\nIf No, they will not be paid for this visit as it will be canceled.\n\nPlease communicate the above to the provider, as CAT will not send a Zendesk ticket.",
+                                              "options": [
+                                                {
+                                                  "id": "1215660171818974",
+                                                  "label": "Yes"
+                                                },
+                                                {
+                                                  "id": "1215660171818975",
+                                                  "label": "No"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "id": "1215660171818976",
+                                              "label": "Please list the DOS status so we know what is and is not yet back from the insurance company.",
+                                              "type": "textarea",
+                                              "required": false,
+                                              "help": "CAT cannot take action on claims until they have returned from insurance. This is indicated by an ERA posted in the Alma Portal.\n\nWe'll take action on what we can now and will wait to take action on what has not yet returned. Please communicate this with the provider.\n\nUse the template:\nDOS 1 - [Returned/not yet returned]\nDOS 2 - [Returned/not yet returned]"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "when": "1215660171818978",
+                                          "fields": [
+                                            {
+                                              "id": "1215660171818980",
+                                              "label": "Does the client have new insurance? Please ask the provider/client if you are unsure.",
+                                              "type": "select",
+                                              "required": false,
+                                              "options": [
+                                                {
+                                                  "id": "1215660171818982",
+                                                  "label": "Yes, I've submitted the details for a new eligibility check"
+                                                },
+                                                {
+                                                  "id": "1215660171818983",
+                                                  "label": "Yes, the new eligibility check confirmed they are in-network"
+                                                },
+                                                {
+                                                  "id": "1215660171818984",
+                                                  "label": "No, they do not have new, in-network insurance"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "id": "1215660171818985",
+                                              "label": "Will the provider and client be moving to cash-pay for the affected DOS?",
+                                              "type": "select",
+                                              "required": false,
+                                              "help": "Please ask if you are unsure before submitting to ensure the provider is not double paid. \n\nIf Yes, we will deduct the provider for this visit so they are not double paid.\nIf No, we will have to write off the provider’s payout. \n\nPlease communicate the above to the provider.",
+                                              "options": [
+                                                {
+                                                  "id": "1215660171818987",
+                                                  "label": "yes"
+                                                },
+                                                {
+                                                  "id": "1215660171818988",
+                                                  "label": "no"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "when": "1215660171818989",
+                                          "fields": [
+                                            {
+                                              "id": "1215660171818991",
+                                              "label": "Has the provider been paid for any visits yet?",
+                                              "type": "select",
+                                              "required": false,
+                                              "help": "Read before continuing:\nCheck to see if there is a date under \"Paid Provider On\" in the Alma Portal. If so, the provider was paid for that particular session.\n\nIf Yes, we will deduct the payment from the provider.\nIf No, they will not be paid for this visit as it will be canceled.\n\nPlease communicate the above to the provider, as CAT will not send a Zendesk ticket.",
+                                              "options": [
+                                                {
+                                                  "id": "1215660171818993",
+                                                  "label": "Yes"
+                                                },
+                                                {
+                                                  "id": "1215660171818994",
+                                                  "label": "No"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "id": "1215660171818995",
+                                              "label": "Please list the DOS status so we know what is and is not yet back from the insurance company.",
+                                              "type": "textarea",
+                                              "required": false,
+                                              "help": "CAT cannot take action on claims until they have returned from insurance. This is indicated by an ERA posted in the Alma Portal.\n\nWe'll take action on what we can now and will wait to take action on what has not yet returned. Please communicate this with the provider.\n\nUse the template:\nDOS 1 - [Returned/not yet returned]\nDOS 2 - [Returned/not yet returned]"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "when": "1215659980425242",
+                                  "fields": [
+                                    {
+                                      "id": "1215659980425244",
+                                      "label": "Please list the following information associated with the claim that needs to be cancelled: Date of Service, CPT Code, & Amount Billed",
+                                      "type": "textarea",
+                                      "required": true,
+                                      "help": "Please use this template:\nDOS: [enter]\nCPT Code(s): [enter]\nAmount Billed: [enter]\nInsurance Policy Claim Needs To Be Submitted To: [enter]"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "when": "1215659980425246",
+                                  "fields": [
+                                    {
+                                      "id": "1215659980425248",
+                                      "label": "Please indicate if you first need an eligibility check completed in order to reprocess this claim",
+                                      "type": "select",
+                                      "required": true,
+                                      "help": "Please be aware of the following: \n    Answering yes to this field will create an eligibility task and claims task simultaneously, and\n    Most simple eligibility check reruns can be accomplished via the self-service process. Read this guru card for details: \n            https://app.getguru.com/card/ikyd7eLT/Self-Service-Eligibility-Checks-Disputing-an-Eligibility-Check-",
+                                      "options": [
+                                        {
+                                          "id": "1215659980425250",
+                                          "label": "yes"
+                                        },
+                                        {
+                                          "id": "1215659980425251",
+                                          "label": "no"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "id": "1215659980425252",
+                                      "label": "Please outline the date(s) of service that need to be reprocessed",
+                                      "type": "textarea",
+                                      "required": true,
+                                      "help": "Please provided the dates of service that need to be reprocessed and provide the dates in the following format:\n    xx/xx/xxxx\n    xx/xx/xxxx\n    xx/xx/xxxx"
+                                    },
+                                    {
+                                      "id": "1215659980425254",
+                                      "label": "Please outline the reason needed for reprocessing",
+                                      "type": "textarea",
+                                      "required": true,
+                                      "help": "Please give a brief description as to why this request needs to be processed."
+                                    }
+                                  ]
+                                },
+                                {
+                                  "when": "1215659980425256",
+                                  "fields": [
+                                    {
+                                      "id": "1215659980425258",
+                                      "label": "Please Outline What EAP Support you Need",
+                                      "type": "select",
+                                      "required": true,
+                                      "help": "Note: please ensure that for any EAP updates, the provider has already updated the client profile with correct EAP Authorization information. This would include: The EAP authorization number, The number of available services and the range of dates the service is authorized through.",
+                                      "options": [
+                                        {
+                                          "id": "1215659980425260",
+                                          "label": "Reroute from EAP to Commercial Plan"
+                                        },
+                                        {
+                                          "id": "1215659980425264",
+                                          "label": "Reroute from Commercial plan to EAP"
+                                        },
+                                        {
+                                          "id": "1215659980425268",
+                                          "label": "Correcting EAP CPT code"
+                                        }
+                                      ],
+                                      "branches": [
+                                        {
+                                          "when": "1215659980425260",
+                                          "fields": [
+                                            {
+                                              "id": "1215659980425262",
+                                              "label": "What is the state, date of service (DOS), CPT code(s) and ICD code(s) needed?",
+                                              "type": "text",
+                                              "required": true,
+                                              "help": "Note: only submit a request if you already have this information from the provider.\n\nPlease use this template:\nState: [enter state that care client received care in]\nDOS: [enter]\nCPT Codes: [enter]\nICD Codes: [enter]"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "when": "1215659980425264",
+                                          "fields": [
+                                            {
+                                              "id": "1215659980425266",
+                                              "label": "Duplicate of What is the state, date of service (DOS), CPT code(s) and ICD code(s) needed?",
+                                              "type": "text",
+                                              "required": true,
+                                              "help": "Note: only submit a request if you already have this information from the provider.\n\nPlease use this template:\nState: [enter state that care client received care in]\nDOS: [enter]\nCPT Codes: [enter]\nICD Codes: [enter]"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215659980425269",
+                              "label": "Have all claim responses (ERAs) been received?",
+                              "type": "select",
+                              "required": true,
+                              "options": [
+                                {
+                                  "id": "1215659980425271",
+                                  "label": "Yes"
+                                },
+                                {
+                                  "id": "1215659980425272",
+                                  "label": "No"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215659752352885",
+                              "label": "Please paste the claims ids associated with the impacted claim(s)",
+                              "type": "textarea",
+                              "required": true,
+                              "help": "Note: please only past the claims id number (the number after the \"CL-\" prefix) for data validation purposes; please paste them in a list forma—e.g., 1234,5678,9101"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "when": "1215660171800256",
+                  "fields": [
+                    {
+                      "id": "1215660171800258",
+                      "label": "What support do you need with Payment Issues or Accommodations?",
+                      "type": "select",
+                      "required": true,
+                      "options": [
+                        {
+                          "id": "1215659752344273",
+                          "label": "Held Provider Payment"
+                        },
+                        {
+                          "id": "1215659752344277",
+                          "label": "Payment Plan"
+                        },
+                        {
+                          "id": "1215659752344295",
+                          "label": "Deduction Cadence"
+                        },
+                        {
+                          "id": "1215659752344301",
+                          "label": "Payment Investigation"
+                        }
+                      ],
+                      "branches": [
+                        {
+                          "when": "1215659752344273",
+                          "fields": [
+                            {
+                              "id": "1215659752344275",
+                              "label": "Outline what support you need regarding the held payment",
+                              "type": "text",
+                              "required": false,
+                              "help": "https://app.getguru.com/card/cego5a7i/CAT-Provider-Payout-Holds  contains context on why payments are held."
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215659752344277",
+                          "fields": [
+                            {
+                              "id": "1215659752344279",
+                              "label": "What is the reason for the payment plan request?",
+                              "type": "select",
+                              "required": true,
+                              "options": [
+                                {
+                                  "id": "1215659752344281",
+                                  "label": "Denial Invoices"
+                                },
+                                {
+                                  "id": "1215659752344282",
+                                  "label": "Incorrect EC"
+                                },
+                                {
+                                  "id": "1215659752344283",
+                                  "label": "Unpaid Original Invoices"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215659752344284",
+                              "label": "What is the total amount of money that we expect to collect after the payment plan is complete?",
+                              "type": "textarea",
+                              "required": true,
+                              "help": "Please enter the number in the following format: 123.45\n\nCAT uses this number to understand how much money the client can expect to pay for each invoice. See https://app.getguru.com/card/TopAqBac/CX-Action-Creating-payment-plans-for-clients for guidance."
+                            },
+                            {
+                              "id": "1215659752344286",
+                              "label": "List each date of service (DOS) and the associated invoice amount in this format: MM/DD/YYYY - $XX",
+                              "type": "textarea",
+                              "required": true,
+                              "help": "For example:\n01/10/2023 - $80.74\n01/1/2023 - $100.12"
+                            },
+                            {
+                              "id": "1215659752344288",
+                              "label": "What payment plan cadence did the client request?",
+                              "type": "select",
+                              "required": true,
+                              "help": "The below options represent length of time in weeks. E.g 2-week plan, 4-week plan, etc.",
+                              "options": [
+                                {
+                                  "id": "1215659752344290",
+                                  "label": "2"
+                                },
+                                {
+                                  "id": "1215659752344291",
+                                  "label": "4"
+                                },
+                                {
+                                  "id": "1215659752344292",
+                                  "label": "6"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "1215659752344293",
+                              "label": "What day should the payment plan start?",
+                              "type": "text",
+                              "required": true,
+                              "help": "Format the date as YYYY/MM/DD (e.g., 2023/01/10). \n\nNote, payment plans must always start on the following Thursday."
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215659752344295",
+                          "fields": [
+                            {
+                              "id": "1215659752344297",
+                              "label": "Please outline why the provider is requesting a Deduction Cadence",
+                              "type": "text",
+                              "required": true
+                            },
+                            {
+                              "id": "1215659752344299",
+                              "label": "Please outline what cadence the provider is requesting",
+                              "type": "text",
+                              "required": true
+                            }
+                          ]
+                        },
+                        {
+                          "when": "1215659752344301",
+                          "fields": [
+                            {
+                              "id": "1215659752344303",
+                              "label": "Please outline what support you need from the Payment Investigation (PI) Team",
+                              "type": "textarea",
+                              "required": false
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "1215660171831779",
+              "label": "Insurance Payer",
+              "type": "select",
+              "required": true,
+              "options": [
+                {
+                  "id": "1215660171831781",
+                  "label": "Aetna"
+                },
+                {
+                  "id": "1215660171831782",
+                  "label": "Allied"
+                },
+                {
+                  "id": "1215660171831783",
+                  "label": "All Savers"
+                },
+                {
+                  "id": "1215660171831784",
+                  "label": "Anthem"
+                },
+                {
+                  "id": "1215660171831785",
+                  "label": "BCBS CO"
+                },
+                {
+                  "id": "1215660171831786",
+                  "label": "BCBS MA"
+                },
+                {
+                  "id": "1215660171831787",
+                  "label": "BCBS OH"
+                },
+                {
+                  "id": "1215660171831788",
+                  "label": "Bind/Surest"
+                },
+                {
+                  "id": "1215660171831789",
+                  "label": "BlueCard"
+                },
+                {
+                  "id": "1215660171831790",
+                  "label": "Carelon"
+                },
+                {
+                  "id": "1215660171831791",
+                  "label": "Cigna"
+                },
+                {
+                  "id": "1215660171831792",
+                  "label": "Empire BCBS"
+                },
+                {
+                  "id": "1215660171831793",
+                  "label": "Harvard Pilgrim"
+                },
+                {
+                  "id": "1215660171831794",
+                  "label": "Health Plans Inc."
+                },
+                {
+                  "id": "1215660171831795",
+                  "label": "Meritain"
+                },
+                {
+                  "id": "1215660171831796",
+                  "label": "Nippon"
+                },
+                {
+                  "id": "1215660171831797",
+                  "label": "Oscar"
+                },
+                {
+                  "id": "1215660171831798",
+                  "label": "Oxford"
+                },
+                {
+                  "id": "1215660171831799",
+                  "label": "Point32"
+                },
+                {
+                  "id": "1215660171831800",
+                  "label": "Tufts"
+                },
+                {
+                  "id": "1215660171831801",
+                  "label": "UHC"
+                },
+                {
+                  "id": "1215660171831802",
+                  "label": "UHC Student"
+                },
+                {
+                  "id": "1215660171831803",
+                  "label": "UHSS"
+                },
+                {
+                  "id": "1215659752356098",
+                  "label": "UMR"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1215659907352655",
+      "label": "Enter a Form Title, Reason For Task Submission and Add Attachments",
+      "type": "heading",
+      "required": false
+    },
+    {
+      "id": "1215659907352657",
+      "label": "What is the Subject of this request?\n[FIRST NAME - request or question]",
+      "type": "text",
+      "required": true,
+      "help": "e.g., LIV - Confirm provider payout amount\n\nThis is how you will identify the created task in the Asana Support Board."
+    },
+    {
+      "id": "1215659907352659",
+      "label": "Please outline the reason that you need support from our cross-functional partners.",
+      "type": "textarea",
+      "required": true,
+      "help": "Please include the following information in the text box below:\n    A description of the issue the customer is experiencing\n    What action we need help with (e.g. resubmit the claim for xx/xx/xx DOS, cancel the duplicate claim for xx/xx/xx DOS, etc)\n    Note: If you've already filled out required context and do not need to add any additional context, please write n/a here."
+    },
+    {
+      "id": "1215659907352661",
+      "label": "Please Add Any Attachments Here",
+      "type": "attachment",
+      "required": false,
+      "help": "Add any relevant attachments if necessary. Leave blank if there are no attachments to add.\n\nNote: Do not include Personal Health Information (PHI).\n\nHow to remove PHI\nPC users: draw over PHI with Snipping Tool or crop out\nMac users: draw over PHI with Preview or crop out"
+    }
+  ]
+}

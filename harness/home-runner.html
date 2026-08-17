@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Home daily-refresh harness</title>
+  <style>
+    body { font: 13px/1.5 ui-sans-serif, system-ui, sans-serif; margin: 16px; background: #fbf7f2; color: #1c2b27; }
+    h1 { font-size: 16px; }
+    table { border-collapse: collapse; width: 100%; background: #fff; }
+    td, th { border: 1px solid #e8dfd4; padding: 6px 9px; text-align: left; vertical-align: top; font-size: 12.5px; }
+    .pass { color: #2e7d5b; font-weight: 700; }
+    .fail { color: #c24a35; font-weight: 700; }
+    #stage { position: fixed; right: 8px; bottom: 8px; width: 360px; height: 480px; border: 1px solid #e8dfd4; background: #fff; }
+    pre { white-space: pre-wrap; margin: 0; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <h1>Home view (3.10.0) — daily refresh + lazy boot harness</h1>
+  <div id="status">Running…</div>
+  <table id="results"><tr><th>#</th><th>Scenario</th><th>Result</th><th>Details</th></tr></table>
+  <iframe id="stage" src="about:blank"></iframe>
+
+<script>
+const results = [];
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Live-config fixtures: 2 unsolved tickets; each per-ticket Asana search returns
+// the same task (dedupe → 1 card); stories has one comment; Slack channels empty.
+const FIXTURES = {
+  "/api/v2/search.json": { results: [{ id: 101 }, { id: 202 }] },
+  "/tasks/search": { data: [{ gid: "T1", name: "Task One", permalink_url: "https://app.asana.com/0/0/T1",
+    completed: false, assignee: { name: "A" }, due_on: null, created_at: "2026-08-15T00:00:00Z", custom_fields: [] }] },
+  "/stories": { data: [{ type: "comment", created_at: "2026-08-15T10:00:00Z" }] },
+  "conversations.history": { ok: true, messages: [] },
+  "auth.test": { ok: true, url: "https://t777.slack.com/" }
+};
+function liveCfg(extra) {
+  return Object.assign({
+    settings: { asana_workspace_gid: "W1", slack_channel_ids: "C1:one,C2:two" },
+    apiFixtures: FIXTURES, ticketId: 12345
+  }, extra || {});
+}
+const SNAP = { at: "2026-08-15T09:00:00.000Z", tickets: 2, groups: [{ team: "Unassigned team", tasks: [
+  { gid: "T1", ticket: "101", name: "Task One", url: "https://app.asana.com/0/0/T1", completed: false,
+    assignee: "A", due_on: null, created_at: "2026-08-15T00:00:00Z" }] }] };
+
+async function boot(cfg) {
+  const stage = document.getElementById("stage");
+  await new Promise((resolve) => {
+    stage.onload = resolve;
+    stage.src = "hometest.html?cfg=" + encodeURIComponent(JSON.stringify(cfg));
+  });
+  const W = stage.contentWindow;
+  const t0 = performance.now();
+  while (!W.__homeLoaded) {
+    if (performance.now() - t0 > 5000) throw new Error("home did not boot");
+    await sleep(25);
+  }
+  await sleep(300); // metadata + email + first renders settle
+  return W;
+}
+const count = (W, sub) => W.__mock.requests.filter(r => r.url && r.url.indexOf(sub) !== -1).length;
+const counts = W => ({ zd: count(W, "/api/v2/search.json"), search: count(W, "/tasks/search"),
+                       stories: count(W, "/stories"), slack: count(W, "conversations.history") });
+function click(W, sel) { const n = W.document.querySelector(sel); if (!n) throw new Error("missing " + sel); n.click(); }
+function eq(name, got, want, notes) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  notes.push((ok ? "✓ " : "✗ ") + name + ": got " + JSON.stringify(got) + (ok ? "" : " want " + JSON.stringify(want)));
+  return ok;
+}
+function truthy(name, got, notes) {
+  notes.push((got ? "✓ " : "✗ ") + name + (got ? "" : " (falsy)"));
+  return !!got;
+}
+
+const scenarios = [
+
+  ["H1 cold boot: one full rebuild (2 searches, 1 sweep), snapshot + lastRebuild written", async (notes) => {
+    const W = await boot(liveCfg());
+    const t0 = performance.now();
+    while (count(W, "/stories") < 1 && performance.now() - t0 < 8000) await sleep(50);
+    await sleep(200);
+    const c = counts(W);
+    let ok = eq("zendesk searches", c.zd, 1, notes);
+    ok = eq("asana tasks/search (one per ticket)", c.search, 2, notes) && ok;
+    ok = eq("stories (single sweep, 1 card)", c.stories, 1, notes) && ok;
+    ok = truthy("card rendered", W.document.querySelector('.atask[data-gid="T1"]'), notes) && ok;
+    ok = truthy("ghost ↻ on card", W.document.querySelector('.atask .acard-refresh[data-refresh-gid="T1"]'), notes) && ok;
+    ok = truthy("snapshot cached", W.localStorage.getItem("cxsidebar.home.cache.agent@alma.test"), notes) && ok;
+    ok = truthy("lastRebuild stamped (timestamp)", /^\d{10,}$/.test(W.localStorage.getItem("cxsidebar.home.lastRebuild.agent@alma.test") || ""), notes) && ok;
+    ok = truthy("as-of says Updated", /Updated/.test(W.document.getElementById("home-asana-asof").textContent), notes) && ok;
+    return ok;
+  }],
+
+  ["H2 warm boot (fresh snapshot): renders from cache with ZERO network calls", async (notes) => {
+    const W = await boot(liveCfg({ seedCache: SNAP, seedLastAgoMs: 60000 }));
+    await sleep(400);
+    const c = counts(W);
+    let ok = eq("total asana+zendesk+slack calls", c.zd + c.search + c.stories + c.slack, 0, notes);
+    ok = truthy("cached card rendered", W.document.querySelector('.atask[data-gid="T1"]'), notes) && ok;
+    ok = eq("ticket count from snapshot", W.document.getElementById("home-ticket-count").textContent, "2", notes) && ok;
+    ok = truthy("as-of says As of", /As of/.test(W.document.getElementById("home-asana-asof").textContent), notes) && ok;
+    return ok;
+  }],
+
+  ["H3 no interval poll: 3+ minutes after the cold-boot sweep, request counts are unchanged", async (notes) => {
+    const W = await boot(liveCfg({ seedLastAgoMs: 60000, seedCache: SNAP }));
+    await sleep(400);
+    const before = counts(W);
+    await sleep(200000);  // >6 ticks of the old 30s poll (virtual time fast-forwards this)
+    const after = counts(W);
+    let ok = eq("stories after 200s minus before", after.stories - before.stories, 0, notes);
+    ok = eq("searches after 200s minus before", after.search - before.search, 0, notes) && ok;
+    notes.push("(old 30s poll would have added ~6 sweeps here)");
+    return ok;
+  }],
+
+  ["H4 per-card ↻: exactly one stories call for that task", async (notes) => {
+    const W = await boot(liveCfg({ seedCache: SNAP, seedLastAgoMs: 60000 }));
+    await sleep(300);
+    const before = count(W, "/stories");
+    click(W, '.acard-refresh[data-refresh-gid="T1"]');
+    await sleep(400);
+    let ok = eq("stories calls for one ↻", count(W, "/stories") - before, 1, notes);
+    ok = eq("no rebuild triggered", count(W, "/tasks/search"), 0, notes) && ok;
+    return ok;
+  }],
+
+  ["H5 Refresh all: full manual rebuild, button disabled while pending", async (notes) => {
+    const W = await boot(liveCfg({ seedCache: SNAP, seedLastAgoMs: 60000 }));
+    await sleep(300);
+    click(W, "#home-asana-refresh");
+    const disabledDuring = W.document.getElementById("home-asana-refresh").disabled;
+    const t0 = performance.now();
+    while (count(W, "/stories") < 1 && performance.now() - t0 < 8000) await sleep(50);
+    await sleep(300);
+    let ok = truthy("button disabled during rebuild", disabledDuring, notes);
+    ok = eq("searches fired", count(W, "/tasks/search"), 2, notes) && ok;
+    ok = truthy("button re-enabled", !W.document.getElementById("home-asana-refresh").disabled, notes) && ok;
+    ok = truthy("as-of updated", /Updated/.test(W.document.getElementById("home-asana-asof").textContent), notes) && ok;
+    return ok;
+  }],
+
+  ["H6 stale snapshot (25h): catch-up rebuild fires within the jitter hour", async (notes) => {
+    const W = await boot(liveCfg({ seedCache: SNAP, seedLastAgoMs: 25 * 3600000 }));
+    let fired = false;
+    const t0 = performance.now();
+    while (performance.now() - t0 < 3900000) {       // virtual-time budget fast-forwards this hour
+      if (count(W, "/tasks/search") >= 2) { fired = true; break; }
+      await sleep(30000);
+    }
+    let ok = truthy("catch-up rebuild fired (24h-elapsed rule + jitter)", fired, notes);
+    ok = truthy("cached card was shown immediately meanwhile", W.document.querySelector('.atask[data-gid="T1"]'), notes) && ok;
+    return ok;
+  }],
+
+  ["H7 lazy Slack: zero Slack calls at boot; first view of each sub-tab loads it", async (notes) => {
+    const W = await boot(liveCfg({ seedCache: SNAP, seedLastAgoMs: 60000 }));
+    await sleep(300);
+    let ok = eq("slack calls at boot", count(W, "conversations.history"), 0, notes);
+    click(W, '[data-hsub="slack"]');
+    await sleep(500);
+    ok = eq("history calls after Slack tab (one per channel)", count(W, "conversations.history"), 2, notes) && ok;
+    click(W, '[data-hsub="requests"]');
+    await sleep(500);
+    ok = eq("history after Requests tab (second sweep)", count(W, "conversations.history"), 4, notes) && ok;
+    ok = truthy("auth.test fired for permalinks", count(W, "auth.test") >= 1, notes) && ok;
+    return ok;
+  }],
+];
+
+(async function run() {
+  const table = document.getElementById("results");
+  for (let i = 0; i < scenarios.length; i++) {
+    const [name, fn] = scenarios[i];
+    const notes = [];
+    let pass = false, err = "";
+    try { pass = await fn(notes); }
+    catch (e) { err = String(e && e.stack || e); }
+    results.push({ name, pass, notes, err });
+    const tr = document.createElement("tr");
+    tr.innerHTML = "<td>" + (i + 1) + "</td><td>" + name + "</td><td class='" + (pass ? "pass'>PASS" : "fail'>FAIL") + "</td><td><pre>" +
+      notes.join("\n") + (err ? "\nERROR: " + err : "") + "</pre></td>";
+    table.appendChild(tr);
+  }
+  const passed = results.filter(r => r.pass).length;
+  document.getElementById("status").textContent = "Done: " + passed + "/" + results.length + " passed";
+  window.__homeHarnessResults = { passed, total: results.length, results };
+})();
+</script>
+</body>
+</html>

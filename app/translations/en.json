@@ -1,0 +1,12 @@
+{
+  "app": {
+    "name": "CX Client Data Sidebar",
+    "short_description": "Read-only client eligibility, claims, and EOB context for CX agents.",
+    "long_description": "Shows read-only client context (eligibility, claims, EOB history) in the ticket sidebar, served by Alma's HIPAA-covered broker. The client is derived server-side from the ticket; the agent never composes or runs a query.",
+    "installation_instructions": "Restrict this app to the CX agent group at install. Context loads automatically when an agent opens a ticket."
+  },
+  "default": {
+    "loading": "Loading…",
+    "error": "Couldn’t load client context."
+  }
+}

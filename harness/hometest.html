@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>home.js under mock ZAF</title>
+  <!-- Boots the REAL nav_bar view (assets/home.js) against mock-zaf.js.
+       Extra ?cfg= keys beyond the sidebar harness:
+         seedCache     — written to cxsidebar.home.cache.agent@alma.test before home.js runs
+         seedLastAgoMs — cxsidebar.home.lastRebuild.<email> = Date.now() - this
+       localStorage is cleared first either way, so scenarios are hermetic. -->
+</head>
+<body class="home-view">
+  <div class="wrap">
+    <div id="comment-toast" class="comment-toast" hidden>
+      <span class="comment-toast-msg" id="comment-toast-msg"></span>
+      <button class="comment-toast-close" id="comment-toast-close" type="button" aria-label="Dismiss">✕</button>
+    </div>
+    <div class="section-head asana-head">
+      <h2>Across my open tickets <span class="sub" id="home-who"></span></h2>
+      <span class="count-pill" id="home-ticket-count">0</span>
+    </div>
+    <div class="sample-note" id="home-note" hidden>Showing sample data (demo).</div>
+    <div class="subtabs" id="home-subtabs">
+      <button class="subtab active" type="button" data-hsub="asana">Asana</button>
+      <button class="subtab" type="button" data-hsub="slack">Slack</button>
+      <button class="subtab" type="button" data-hsub="requests">Requests</button>
+    </div>
+    <div class="asub active" id="hsub-asana">
+      <div class="asana-controls">
+        <button class="btn small" id="home-asana-refresh" type="button">↻ Refresh all</button>
+        <span class="asof" id="home-asana-asof"></span>
+      </div>
+      <div id="home-asana-body"><div class="card"><div class="empty">Loading…</div></div></div>
+    </div>
+    <div class="asub" id="hsub-slack">
+      <div id="home-slack-body"><div class="card"><div class="empty">Loading…</div></div></div>
+    </div>
+    <div class="asub" id="hsub-requests">
+      <div class="dedupe-controls"><button class="btn small" id="home-req-toggle" type="button" aria-pressed="false">Show resolved too</button></div>
+      <div id="home-req-body"><div class="card"><div class="empty">Loading…</div></div></div>
+    </div>
+  </div>
+  <script src="mock-zaf.js"></script>
+  <script>
+    (function () {
+      try { localStorage.clear(); } catch (e) {}
+      var cfg = window.__mock.cfg, email = "agent@alma.test";
+      if (cfg.seedCache) localStorage.setItem("cxsidebar.home.cache." + email, JSON.stringify(cfg.seedCache));
+      if (cfg.seedLastAgoMs != null) localStorage.setItem("cxsidebar.home.lastRebuild." + email, String(Date.now() - cfg.seedLastAgoMs));
+    })();
+  </script>
+  <script src="../v2.9.2/cx-client-data-sidebar-v2.9.0/assets/home.js"></script>
+  <script>window.__homeLoaded = true;</script>
+</body>
+</html>

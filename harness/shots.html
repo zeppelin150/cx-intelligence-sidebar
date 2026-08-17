@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <title>shots — app under test</title>
+  <!-- Screenshot driver for headless Chrome: boots the real v2.9.2 assets over
+       mock-zaf (same as apptest.html), then walks the UI into the state named by
+       ?view= and stops. Used with --headless --screenshot --virtual-time-budget.
+         ?view=summary | account (alias: context) | asana |
+               guru-suggested | guru-search | guru-browse | guru-reader | guru-recents |
+               slack | slack-post | slack-channels | slack-workflows
+         &theme=dark   flips the persisted theme before boot
+         &w=320        true layout width in px (default 360) — headless Chrome
+                       clamps small --window-size values, so pass w= instead -->
+  <script>
+    (function () {
+      var q = new URLSearchParams(location.search);
+      try { localStorage.setItem("cxsidebar.theme", q.get("theme") === "dark" ? "dark" : "light"); } catch (e) {}
+      if (q.get("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");
+    })();
+  </script>
+  <!-- Everything (mock included) loads with a per-run cache-buster so edit →
+       reload loops never serve a stale file from the browser's memory cache. -->
+  <script>
+    window.__bust = Date.now();
+    document.write('<script src="./mock-zaf.js?t=' + window.__bust + '"><\/script>');
+    document.write('<link rel="stylesheet" href="../v2.9.2/cx-client-data-sidebar-v2.9.0/assets/app.css?t=' + window.__bust + '" />');
+  </script>
+  <style>body { max-width: 360px; }</style>
+  <script>
+    (function () {
+      var w = parseInt(new URLSearchParams(location.search).get("w"), 10);
+      if (w > 0) document.write('<style>body { max-width: ' + w + 'px; }</style>');
+    })();
+  </script>
+</head>
+<body>
+  <script>
+    (async function () {
+      var q = new URLSearchParams(location.search);
+      var view = q.get("view") || "guru-suggested";
+      var res = await fetch("../v2.9.2/cx-client-data-sidebar-v2.9.0/assets/index.html?t=" + window.__bust, { cache: "no-cache" });
+      var doc = new DOMParser().parseFromString(await res.text(), "text/html");
+      document.body.insertAdjacentHTML("afterbegin", doc.body.innerHTML);
+      var s = document.createElement("script");
+      s.src = "../v2.9.2/cx-client-data-sidebar-v2.9.0/assets/app.js?t=" + window.__bust;
+      s.onload = function () { setTimeout(walk, 400); };
+      document.body.appendChild(s);
+
+      function click(sel) { var n = document.querySelector(sel); if (n) n.click(); }
+      function walk() {
+        var steps = {
+          "summary":        [],  // landing pane — profile + ticket digest + latest tickets
+          "account":        [['.tab[data-pane="context"]']],  // warehouse client context
+          "context":        [['.tab[data-pane="context"]']],  // legacy alias for account
+          "asana":          [['.tab[data-pane="asana"]']],
+          "slack":          [['.tab[data-pane="slack"]']],
+          "guru-suggested": [['.tab[data-pane="guru"]']],
+          "guru-search":    [['.tab[data-pane="guru"]'], ['#guru-subtabs .subtab[data-gsub="search"]']],
+          "guru-browse":    [['.tab[data-pane="guru"]'], ['#guru-subtabs .subtab[data-gsub="browse"]'], ["#guru-browse-body [data-guru-col]"]],
+          "guru-recents":   [['.tab[data-pane="guru"]'], ['#guru-subtabs .subtab[data-gsub="recents"]']],
+          "guru-reader":    [['.tab[data-pane="guru"]'], ["#gsub-suggested [data-guru-open]"]],
+          "slack-post":     [['.tab[data-pane="slack"]']],
+          "slack-channels": [['.tab[data-pane="slack"]'], ['#slack-subtabs .subtab[data-ssub="channels"]']],
+          "slack-workflows":[['.tab[data-pane="slack"]'], ['#slack-subtabs .subtab[data-ssub="workflows"]']]
+        }[view] || [];
+        var i = 0;
+        (function next() {
+          if (i >= steps.length) { document.title = "READY " + view; return; }
+          click(steps[i][0]); i++;
+          setTimeout(next, 350);
+        })();
+      }
+    })();
+  </script>
+</body>
+</html>

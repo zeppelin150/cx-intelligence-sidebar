@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AHT + Guru harness</title>
+  <style>
+    body { font: 13px/1.5 ui-sans-serif, system-ui, sans-serif; margin: 16px; background: #fbf7f2; color: #1c2b27; }
+    h1 { font-size: 16px; }
+    table { border-collapse: collapse; width: 100%; background: #fff; }
+    td, th { border: 1px solid #e8dfd4; padding: 6px 9px; text-align: left; vertical-align: top; font-size: 12.5px; }
+    .pass { color: #2e7d5b; font-weight: 700; }
+    .fail { color: #c24a35; font-weight: 700; }
+    #stage { position: fixed; right: 8px; bottom: 8px; width: 360px; height: 480px; border: 1px solid #e8dfd4; background: #fff; }
+    pre { white-space: pre-wrap; margin: 0; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <h1>AHT v2 + Guru v2 — adversarial regression harness</h1>
+  <div id="status">Running…</div>
+  <table id="results"><tr><th>#</th><th>Scenario</th><th>Result</th><th>Details</th></tr></table>
+  <iframe id="stage" src="about:blank"></iframe>
+
+<script>
+const MAP = "summary:25000,context:25001,asana_tasks:25002,asana_create:25003,asana_search:25004,slack:25005,guru:25006";
+const ENDPOINT = "https://collector.test/aht";
+const results = [];
+
+function baseCfg(extra) {
+  return Object.assign({ settings: { aht_field_map: MAP, aht_endpoint: ENDPOINT }, fields: {}, startHidden: false, ticketId: 12345 }, extra || {});
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function boot(cfg, opts) {
+  const stage = document.getElementById("stage");
+  await new Promise((resolve) => {
+    stage.onload = resolve;
+    stage.src = "apptest.html?cfg=" + encodeURIComponent(JSON.stringify(cfg));
+  });
+  const W = stage.contentWindow;
+  const t0 = performance.now();
+  while (!(W.__appLoaded && W.__aht)) {
+    if (performance.now() - t0 > 5000) throw new Error("app did not boot");
+    await sleep(25);
+  }
+  try { W.localStorage.clear(); } catch (e) {}
+  if (!(opts && opts.skipSettle)) await sleep(250); // metadata + baseline settle
+  // The clock starts pessimistically deactivated; ZAF fires app.activated on
+  // load of the active ticket — simulate that unless a scenario opts out.
+  if (!(opts && opts.noActivate)) { W.__mock.fire("app.activated"); await sleep(20); }
+  return W;
+}
+
+// -- helpers over the mock ---------------------------------------------------
+const isTicketPut = r => r.type === "PUT" && /\/api\/v2\/tickets\/12345\.json$/.test(r.url) && r.data && r.data.ticket && r.data.ticket.custom_fields;
+const isWarehousePost = r => r.type === "POST" && r.url === ENDPOINT;
+function fieldsOf(r) { const o = {}; r.data.ticket.custom_fields.forEach(f => { o[String(f.id)] = f.value; }); return o; }
+function click(W, sel) { const n = W.document.querySelector(sel); if (!n) throw new Error("missing element " + sel); n.click(); }
+function eq(name, got, want, notes) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  notes.push((ok ? "✓ " : "✗ ") + name + ": got " + JSON.stringify(got) + (ok ? "" : " want " + JSON.stringify(want)));
+  return ok;
+}
+function truthy(name, got, notes) {
+  notes.push((got ? "✓ " : "✗ ") + name + (got ? "" : " (falsy: " + JSON.stringify(got) + ")"));
+  return !!got;
+}
+
+// -- scenarios ---------------------------------------------------------------
+const scenarios = [
+
+  ["S1 attribution + baseline seeding (C2): fields written as baseline+session", async (notes) => {
+    const W = await boot(baseCfg({ fields: { "25005": 300 } }));
+    const M = W.__mock;
+    M.advance(30000);                       // 30s on summary (default pane)
+    click(W, '.tab[data-pane="slack"]');
+    M.advance(90000);                       // 90s on slack
+    M.setHidden(true); await M.settle();
+    const puts = M.requests.filter(isTicketPut);
+    let ok = truthy("one fields PUT", puts.length === 1, notes);
+    const f = puts.length ? fieldsOf(puts[0]) : {};
+    ok = eq("summary field 25000", f["25000"], 30, notes) && ok;
+    ok = eq("slack field 25005 (300 baseline + 90)", f["25005"], 390, notes) && ok;
+    const posts = M.requests.filter(isWarehousePost);
+    ok = truthy("one warehouse POST", posts.length === 1, notes) && ok;
+    if (posts.length) {
+      ok = eq("delta summary", posts[0].data.seconds.summary, 30, notes) && ok;
+      ok = eq("delta slack", posts[0].data.seconds.slack, 90, notes) && ok;
+      ok = truthy("idempotency_key present", posts[0].data.idempotency_key, notes) && ok;
+    }
+    return ok;
+  }],
+
+  ["S2 (C1) backgrounded instance never resumes on visibilitychange", async (notes) => {
+    const W = await boot(baseCfg());
+    const M = W.__mock;
+    click(W, '.tab[data-pane="slack"]');
+    M.advance(30000);                        // 30s slack
+    M.fire("app.deactivated"); await M.settle();   // agent moves to another ticket
+    M.setHidden(true); M.setHidden(false);   // browser window hidden + shown (the killer input)
+    M.advance(1200000);                      // 20 minutes pass while deactivated
+    M.setHidden(true); await M.settle();     // another flush trigger
+    let ok = eq("dwell.slack still 30", W.__aht.dwell.slack, 30, notes);
+    ok = truthy("running=false while deactivated", W.__aht.running === false, notes) && ok;
+    const puts = W.__mock.requests.filter(isTicketPut);
+    ok = truthy("exactly one fields PUT (no phantom writes)", puts.length === 1, notes) && ok;
+    if (puts.length) ok = eq("PUT slack value", fieldsOf(puts[0])["25005"], 30, notes) && ok;
+    return ok;
+  }],
+
+  ["S3 (C3) warehouse delta survives a failed POST and is re-sent", async (notes) => {
+    const W = await boot(baseCfg());
+    const M = W.__mock;
+    click(W, '.tab[data-pane="slack"]');
+    M.advance(60000);
+    M.setHidden(true); await M.settle();     // POST 1 ok (60)
+    M.setHidden(false);
+    M.advance(30000);
+    M.failNext(isWarehousePost);
+    M.setHidden(true); await M.settle();     // POST 2 fails (30 lost? must NOT be)
+    M.setHidden(false);
+    M.advance(1000);
+    M.setHidden(true); await M.settle();     // POST 3 re-sends
+    const posts = M.requests.filter(isWarehousePost);
+    const delivered = posts.filter(p => p.outcome === "ok").reduce((s, p) => s + (p.data.seconds.slack || 0), 0);
+    let ok = eq("three POST attempts", posts.length, 3, notes);
+    ok = eq("delivered slack seconds == session total", delivered, W.__aht.dwell.slack, notes) && ok;
+    ok = eq("session total", W.__aht.dwell.slack, 91, notes) && ok;
+    return ok;
+  }],
+
+  ["S4 (C5) failed fields PUT is retried — final value not lost", async (notes) => {
+    const W = await boot(baseCfg());
+    const M = W.__mock;
+    M.failNext(isTicketPut);
+    click(W, '.tab[data-pane="slack"]');
+    M.advance(90000);
+    M.setHidden(true); await M.settle();     // PUT 1 fails
+    M.setHidden(false);
+    M.advance(5000);
+    M.setHidden(true); await M.settle();     // PUT 2 must carry 95
+    const puts = M.requests.filter(isTicketPut);
+    const okPuts = puts.filter(p => p.outcome === "ok");
+    let ok = eq("two PUT attempts", puts.length, 2, notes);
+    ok = eq("one succeeded", okPuts.length, 1, notes) && ok;
+    if (okPuts.length) ok = eq("recovered value 95", fieldsOf(okPuts[0])["25005"], 95, notes) && ok;
+    return ok;
+  }],
+
+  ["S5 (C6) invalid map entry is skipped — other fields still written, no null ids", async (notes) => {
+    const W = await boot(baseCfg({ settings: { aht_field_map: "summary:25001,slack:25O05", aht_endpoint: "" } }));
+    const M = W.__mock;
+    M.advance(30000);                        // summary (landing pane) 30
+    click(W, '.tab[data-pane="slack"]');
+    M.advance(60000);                        // slack 60 (unmapped after validation)
+    M.setHidden(true); await M.settle();
+    const puts = M.requests.filter(isTicketPut);
+    let ok = truthy("one fields PUT", puts.length === 1, notes);
+    if (puts.length) {
+      const ids = puts[0].data.ticket.custom_fields.map(f => f.id);
+      ok = eq("only valid id present", ids, [25001], notes) && ok;
+      ok = truthy("no null/NaN ids", ids.every(i => typeof i === "number" && isFinite(i)), notes) && ok;
+    }
+    ok = truthy("map errors surfaced", W.__aht.mapErrors.length > 0, notes) && ok;
+    return ok;
+  }],
+
+  ["S6 (M1) Guru reader time bills to guru even over the Slack pane", async (notes) => {
+    const W = await boot(baseCfg());
+    const M = W.__mock;
+    click(W, '.tab[data-pane="guru"]'); await M.settle();
+    click(W, "#gsub-suggested [data-guru-open]"); await M.settle();  // open reader
+    click(W, "#guru-min");                                           // minimize to chip
+    click(W, '.tab[data-pane="slack"]');                             // move to Slack pane
+    M.advance(5000);                                                 // 5s genuinely on slack
+    click(W, "#guru-chip"); await M.settle();                        // reopen reader from chip
+    let ok = eq("active feature is guru with overlay open", W.__aht.active, "guru", notes);
+    M.advance(120000);                                               // 2 min reading in the overlay
+    M.setHidden(true); await M.settle();
+    ok = eq("dwell.guru", W.__aht.dwell.guru, 120, notes) && ok;
+    ok = eq("dwell.slack only its real 5s", W.__aht.dwell.slack, 5, notes) && ok;
+    return ok;
+  }],
+
+  ["S7 (M2) hidden boot accrues nothing until first shown", async (notes) => {
+    const W = await boot(baseCfg({ startHidden: true }));
+    const M = W.__mock;
+    M.advance(600000);                        // 10 min in a background tab
+    M.fire("app.deactivated"); await M.settle();
+    let ok = eq("dwell.summary", W.__aht.dwell.summary || 0, 0, notes);
+    ok = truthy("no fields PUT", M.requests.filter(isTicketPut).length === 0, notes) && ok;
+    return ok;
+  }],
+
+  ["S8 (m4) serialized flushes — slow PUT cannot land after a later one", async (notes) => {
+    const W = await boot(baseCfg());
+    const M = W.__mock;
+    M.delayNext(isTicketPut, 250);
+    click(W, '.tab[data-pane="slack"]');
+    M.advance(60000);
+    M.setHidden(true);                        // PUT A issued (slow, 60)
+    await sleep(30);                          // let A actually go out before more dwell accrues
+    M.setHidden(false);
+    M.advance(30000);
+    M.setHidden(true);                        // PUT B queued behind still-inflight A (90)
+    await M.settle(600);
+    const puts = M.requests.filter(isTicketPut);
+    let ok = eq("two PUTs", puts.length, 2, notes);
+    if (puts.length === 2) {
+      ok = eq("A carries 60", fieldsOf(puts[0])["25005"], 60, notes) && ok;
+      ok = eq("B carries 90", fieldsOf(puts[1])["25005"], 90, notes) && ok;
+      ok = truthy("B issued only after A resolved (serialized)", puts[1].t - puts[0].t >= 240, notes) && ok;
+    }
+    return ok;
+  }],
+
+  ["S9 (m1) rapid 600ms tab flips conserve wall clock (12s, not 20s or 0s)", async (notes) => {
+    const W = await boot(baseCfg());
+    const M = W.__mock;
+    for (let i = 0; i < 20; i++) {
+      click(W, i % 2 ? '.tab[data-pane="context"]' : '.tab[data-pane="slack"]');
+      M.advance(600);
+    }
+    M.setHidden(true); await M.settle();
+    const total = (W.__aht.dwell.context || 0) + (W.__aht.dwell.slack || 0);
+    return eq("context+slack total", total, 12, notes);
+  }],
+
+  ["S10 (C4) pagehide sends a warehouse beacon with the tail dwell", async (notes) => {
+    const W = await boot(baseCfg());
+    const M = W.__mock;
+    click(W, '.tab[data-pane="slack"]');
+    M.advance(45000);                          // 45s — under any flush interval
+    M.pagehide(); await M.settle();
+    let ok = eq("one beacon", M.beacons.length, 1, notes);
+    if (M.beacons.length) {
+      ok = eq("beacon slack seconds", M.beacons[0].data.seconds.slack, 45, notes) && ok;
+      ok = truthy("beacon idempotency_key", M.beacons[0].data.idempotency_key, notes) && ok;
+    }
+    return ok;
+  }],
+
+  ["S11 Guru v2 demo UI: suggest / search / browse / reader / verify / insert / pin", async (notes) => {
+    const W = await boot(baseCfg());
+    const M = W.__mock;
+    const $ = sel => W.document.querySelectorAll(sel);
+    click(W, '.tab[data-pane="guru"]'); await M.settle();
+    let ok = eq("3 suggested card rows", $("#guru-suggested-body .guru-row").length, 3, notes);
+    ok = eq("Ask-Guru answer + 2 sources present", $("#guru-answer-body .guru-ai-badge").length === 1 && $("#guru-answer-body .guru-answer-sources .guru-row").length === 2, true, notes) && ok;
+    // search
+    click(W, '#guru-subtabs .subtab[data-gsub="search"]');
+    const si = W.document.getElementById("guru-search-input");
+    si.value = "EOB"; si.dispatchEvent(new W.Event("input", { bubbles: true }));
+    await sleep(450);
+    ok = truthy("search finds EOB card", $("#guru-search-body .guru-row").length >= 1, notes) && ok;
+    // browse
+    click(W, '#guru-subtabs .subtab[data-gsub="browse"]'); await M.settle();
+    ok = eq("2 collections at root", $("#guru-browse-body [data-guru-col]").length, 2, notes) && ok;
+    click(W, "#guru-browse-body [data-guru-col]"); await M.settle();
+    ok = eq("2 folders in CX Playbooks", $("#guru-browse-body [data-guru-folder]").length, 2, notes) && ok;
+    click(W, "#guru-browse-body [data-guru-folder]"); await M.settle();
+    ok = eq("2 cards in Eligibility", $("#guru-browse-body [data-guru-open]").length, 2, notes) && ok;
+    // reader: open card, verify toggle, insert, pin
+    click(W, "#guru-browse-body [data-guru-open]"); await M.settle();
+    ok = truthy("reader open", !W.document.getElementById("guru-overlay").hidden, notes) && ok;
+    ok = truthy("trust bar rendered", $("#guru-overlay-body .guru-vbar").length === 1, notes) && ok;
+    const before = W.document.querySelector("#guru-overlay-body .gv-badge").textContent;
+    click(W, "#guru-overlay-body [data-guru-verify]"); await M.settle();
+    const after = W.document.querySelector("#guru-overlay-body .gv-badge").textContent;
+    ok = truthy("verify toggles badge (" + before + " → " + after + ")", before !== after, notes) && ok;
+    click(W, "#guru-overlay-body [data-guru-insert]"); await M.settle();
+    ok = truthy("ticket.editor.insert invoked", M.invokes.some(i => i[0] === "ticket.editor.insert"), notes) && ok;
+    click(W, "#guru-overlay-body [data-guru-pin]"); await M.settle();
+    click(W, "#guru-close");
+    click(W, '#guru-subtabs .subtab[data-gsub="recents"]'); await M.settle();
+    ok = truthy("recents lists the opened card", $("#guru-recents-body [data-guru-open]").length >= 1, notes) && ok;
+    ok = truthy("pin persisted", $("#guru-recents-body .guru-pin.pinned").length >= 1, notes) && ok;
+    return ok;
+  }],
+
+  ["S12 (review#1) pagehide beacon excludes deltas already on the wire — no double-delivery", async (notes) => {
+    const W = await boot(baseCfg());
+    const M = W.__mock;
+    M.delayNext(isWarehousePost, 500);        // flush POST stays in flight over the pagehide
+    click(W, '.tab[data-pane="slack"]');
+    M.advance(60000);
+    M.setHidden(true);                        // flush → POST (60s) issued, unresolved
+    await sleep(30);
+    M.pagehide();                             // beacon must NOT re-send the same 60s
+    await M.settle(700);                      // let the delayed POST resolve
+    let ok = eq("no beacon fired for in-flight seconds", M.beacons.length, 0, notes);
+    const delivered = M.requests.filter(isWarehousePost).filter(p => p.outcome !== "fail")
+      .reduce((s, p) => s + (p.data.seconds.slack || 0), 0);
+    ok = eq("delivered slack seconds == session (no 2x)", delivered, 60, notes) && ok;
+    return ok;
+  }],
+
+  ["S13 (review#3) unreadable baseline disables field writes instead of clobbering totals", async (notes) => {
+    const W = await boot(baseCfg({ failFieldGet: true }));
+    const M = W.__mock;
+    click(W, '.tab[data-pane="slack"]');
+    M.advance(45000);
+    M.setHidden(true); await M.settle();
+    let ok = truthy("no ticket fields PUT (baseline unknown)", M.requests.filter(isTicketPut).length === 0, notes);
+    const posts = M.requests.filter(isWarehousePost);
+    ok = truthy("warehouse stream still flows", posts.length === 1, notes) && ok;
+    if (posts.length) ok = eq("warehouse slack delta", posts[0].data.seconds.slack, 45, notes) && ok;
+    ok = eq("dwell tracked in memory", W.__aht.dwell.slack, 45, notes) && ok;
+    return ok;
+  }],
+
+  ["S14 (review#7) Guru tab clicked before slow settings resolve — live mode not latched as demo", async (notes) => {
+    const W = await boot(baseCfg({
+      settings: { guru_reason_field: "40001", aht_field_map: MAP },
+      fields: { "40001": "PAYMENT_ISSUE" },
+      delayMetadata: 600
+    }), { skipSettle: true });
+    const M = W.__mock;
+    click(W, '.tab[data-pane="guru"]');       // clicked while metadata still pending
+    await sleep(1000);                        // settings resolve; initGuru body runs after them
+    const note = W.document.getElementById("guru-sample-note");
+    let ok = truthy("demo sample note hidden (live mode)", note.hidden === true, notes);
+    ok = eq("reason code resolved live", W.document.getElementById("guru-reason").textContent, "PAYMENT_ISSUE", notes) && ok;
+    const body = W.document.getElementById("guru-suggested-body").textContent;
+    ok = truthy("live (empty) results, not demo sample cards", body.indexOf("(sample)") === -1, notes) && ok;
+    return ok;
+  }],
+
+  ["S15 (review#2) clock starts paused until activation — a boot-race deactivation can't bill forever", async (notes) => {
+    const W = await boot(baseCfg(), { noActivate: true });
+    const M = W.__mock;
+    M.advance(30000);                          // 30s before any activation evidence
+    let ok = eq("no dwell before activation", W.__aht.dwell.summary || 0, 0, notes);
+    ok = truthy("running=false pre-activation", W.__aht.running === false, notes) && ok;
+    M.fire("app.activated"); await sleep(20);  // ZAF activation arrives
+    M.advance(20000);
+    M.setHidden(true); await M.settle();
+    ok = eq("dwell after activation", W.__aht.dwell.summary, 20, notes) && ok;
+    const puts = M.requests.filter(isTicketPut);
+    ok = truthy("PUT carries only post-activation seconds", puts.length === 1 && fieldsOf(puts[0])["25000"] === 20, notes) && ok;
+    return ok;
+  }],
+
+  ["S16 (Ask Guru) demo: auto-answers from reason code with cited sources", async (notes) => {
+    const W = await boot(baseCfg());   // demo mode (no guru_reason_field)
+    const M = W.__mock;
+    const $ = s => W.document.querySelectorAll(s);
+    click(W, '.tab[data-pane="guru"]'); await M.settle(250);
+    let ok = truthy("ask panel visible", W.document.getElementById("guru-ask").hidden === false, notes);
+    ok = truthy("input seeded from reason code", /eligibility dispute/i.test(W.document.getElementById("guru-ask-input").value), notes) && ok;
+    ok = truthy("AI badge shown", $(".guru-ai-badge").length >= 1, notes) && ok;
+    ok = truthy("answer text present", ((W.document.querySelector(".guru-answer-text") || {}).textContent || "").length > 20, notes) && ok;
+    ok = eq("two cited sources", $(".guru-answer-sources [data-guru-open]").length, 2, notes) && ok;
+    $(".guru-answer-sources [data-guru-open]")[0].click(); await M.settle(200);
+    ok = truthy("clicking a source opens the reader", !W.document.getElementById("guru-overlay").hidden, notes) && ok;
+    return ok;
+  }],
+
+  ["S17 (Ask Guru) live: tolerant parse of /v1/answers → answer text + mixed sources", async (notes) => {
+    const W = await boot(baseCfg({ settings: { guru_reason_field: "40001", guru_ai_answers: true }, fields: { "40001": "PAYMENT_ISSUE" } }));
+    const M = W.__mock;
+    // Real /v1/answers shape (confirmed vs guru_openapi.json): answer is a
+    // top-level string; sources are Documents keyed by documentType. The WEB
+    // source has an id but must still render as a link, not a card-open.
+    M.respondNext(r => r.type === "POST" && /\/answers$/.test(r.url), {
+      answer: "Refund within 5 business days.\n\n- Verify the charge\n- Issue the refund",
+      sources: [
+        { documentType: "GURU", id: "card-9", title: "Refund policy", verificationState: "TRUSTED", url: "https://app.getguru.com/cards/abc" },
+        { documentType: "WEB", id: "web-1", title: "External KB", url: "https://kb.example/refunds" }
+      ]
+    });
+    click(W, '.tab[data-pane="guru"]'); await M.settle(350);
+    const posted = M.requests.find(r => r.type === "POST" && /\/answers$/.test(r.url));
+    const $ = s => W.document.querySelectorAll(s);
+    let ok = truthy("POST /answers fired", !!posted, notes);
+    ok = truthy("question seeded from reason code", posted && /payment issue/i.test(posted.data.question), notes) && ok;
+    ok = truthy("answer text rendered", /Refund within 5/.test((W.document.querySelector(".guru-answer-text") || {}).textContent || ""), notes) && ok;
+    ok = eq("markdown bullets parsed to <li>", $(".guru-answer-text li").length, 2, notes) && ok;
+    ok = eq("card source is openable", $('.guru-answer-sources [data-guru-open="card-9"]').length, 1, notes) && ok;
+    ok = eq("external source is a link", $(".guru-answer-sources a.guru-row-link").length, 1, notes) && ok;
+    return ok;
+  }],
+
+  ["S18 (Ask Guru) live: 403 (no Guru AI) retires the panel, card suggestions still load", async (notes) => {
+    const W = await boot(baseCfg({ settings: { guru_reason_field: "40001", guru_ai_answers: true }, fields: { "40001": "PAYMENT_ISSUE" } }));
+    const M = W.__mock;
+    M.failNext(r => r.type === "POST" && /\/answers$/.test(r.url), 1, 403);
+    M.respondNext(r => /\/search\/query/.test(r.url), { cards: [ { id: "card-1", preferredPhrase: "Payment triage", verificationState: "TRUSTED" } ] });
+    click(W, '.tab[data-pane="guru"]'); await M.settle(400);
+    let ok = truthy("ask panel hidden after 403", W.document.getElementById("guru-ask").hidden === true, notes);
+    ok = truthy("card suggestions still rendered", W.document.querySelectorAll("#guru-suggested-body [data-guru-open]").length >= 1, notes) && ok;
+    return ok;
+  }],
+
+  ["S19 Slack sub-tabs demo: channels + favorites pin + sample workflows", async (notes) => {
+    const W = await boot(baseCfg());
+    const M = W.__mock;
+    const $ = s => W.document.querySelectorAll(s);
+    click(W, '.tab[data-pane="slack"]'); await M.settle();
+    let ok = eq("three slack sub-tabs", $("#slack-subtabs .subtab").length, 3, notes);
+    click(W, '#slack-subtabs .subtab[data-ssub="channels"]'); await M.settle();
+    ok = truthy("demo channel rows render", $("#slack-channels-body .guru-row").length >= 4, notes) && ok;
+    ok = eq("count pill", W.document.getElementById("slack-ch-count").textContent, "4", notes) && ok;
+    // favorite a channel → pinned class + persisted + resorted to top
+    const pin = W.document.querySelector('#slack-channels-body [data-slack-pin]');
+    const pinId = pin.getAttribute("data-slack-pin");
+    pin.click(); await M.settle(30);
+    ok = truthy("pin toggles on", W.document.querySelector('[data-slack-pin="' + pinId + '"]').classList.contains("pinned"), notes) && ok;
+    ok = truthy("pin persisted to localStorage", (W.localStorage.getItem("cxsidebar.slack.pins") || "").indexOf(pinId) > -1, notes) && ok;
+    // directory search narrows, clearing restores the relevant view
+    const sci = W.document.getElementById("slack-ch-search");
+    sci.value = "prod"; sci.dispatchEvent(new W.Event("input", { bubbles: true }));
+    await sleep(450);
+    ok = eq("search narrows to 1 row", $("#slack-channels-body .guru-row").length, 1, notes) && ok;
+    sci.value = ""; sci.dispatchEvent(new W.Event("input", { bubbles: true }));
+    await sleep(450);
+    ok = eq("clearing restores relevant view", $("#slack-channels-body .guru-row").length, 4, notes) && ok;
+    click(W, '#slack-subtabs .subtab[data-ssub="workflows"]'); await M.settle();
+    ok = eq("three sample workflows", $("#slack-wf-body .guru-row").length, 3, notes) && ok;
+    ok = truthy("demo launch buttons disabled", [...$("#slack-wf-body .srow-open")].every(b => b.disabled), notes) && ok;
+    ok = truthy("post view still intact", !!W.document.getElementById("slack-body"), notes) && ok;
+    return ok;
+  }],
+
+  ["S20 Slack direct: conversations.list + posting-channel badge + bookmark workflow discovery", async (notes) => {
+    const W = await boot(baseCfg({ settings: {
+      slack_channel_id: "C123", aht_field_map: MAP,
+      slack_workflow_links: "Escalation intake|https://slack.com/shortcuts/Ft111/aaa",
+      slack_channel_ids: "C456:cx commons"
+    } }));
+    const M = W.__mock;
+    const $ = s => W.document.querySelectorAll(s);
+    const isSlack = (m) => r => r.url === "https://slack.com/api/" + m;
+    M.respondNext(isSlack("auth.test"), { ok: true, team_id: "T777" });
+    // Relevant view = memberships (users.conversations) + stars/pins/configured
+    // hydrated via conversations.info — never a full conversations.list.
+    M.respondNext(isSlack("users.conversations"), { ok: true, channels: [
+      { id: "C123", name: "cx-commons", is_member: true, topic: { value: "CX room" } }
+    ] });
+    M.respondNext(isSlack("stars.list"), { ok: true, items: [ { type: "channel", channel: "C9" } ] });
+    M.respondNext(isSlack("conversations.info"), { ok: true, channel: { id: "C9", name: "randomness", is_member: false, topic: { value: "" } } });
+    M.respondNext(isSlack("bookmarks.list"), { ok: true, bookmarks: [
+      { title: "PTO request", link: "https://slack.com/shortcuts/Ft999/xyz", type: "link" },
+      { title: "Docs", link: "https://example.com/docs", type: "link" }
+    ] });
+    click(W, '.tab[data-pane="slack"]'); await M.settle();
+    click(W, '#slack-subtabs .subtab[data-ssub="channels"]'); await M.settle(150);
+    let ok = eq("relevant view = member + starred rows only", $("#slack-channels-body .guru-row").length, 2, notes);
+    ok = truthy("posting-channel badge on C123", [...$("#slack-channels-body .gv-badge")].some(b => /posting channel/.test(b.textContent)), notes) && ok;
+    ok = truthy("real Slack star surfaces", [...$("#slack-channels-body .gv-badge")].some(b => /starred in Slack/.test(b.textContent)), notes) && ok;
+    ok = truthy("rows deep-link into Slack", [...$("#slack-channels-body a.guru-row-main")].every(a => /app\.slack\.com\/client\/T777\//.test(a.href)), notes) && ok;
+    // directory search pages conversations.list on demand
+    M.respondNext(isSlack("conversations.list"), { ok: true, channels: [
+      { id: "C9", name: "randomness", is_member: false, topic: { value: "" } },
+      { id: "C77", name: "random-other", is_member: false, topic: { value: "" } },
+      { id: "C123", name: "cx-commons", is_member: true, topic: { value: "CX room" } }
+    ] });
+    const sci = W.document.getElementById("slack-ch-search");
+    sci.value = "random"; sci.dispatchEvent(new W.Event("input", { bubbles: true }));
+    await sleep(500);
+    ok = eq("directory search hits", $("#slack-channels-body .guru-row").length, 2, notes) && ok;
+    ok = truthy("results labeled as directory", /Directory results/.test(W.document.getElementById("slack-channels-body").textContent), notes) && ok;
+    sci.value = ""; sci.dispatchEvent(new W.Event("input", { bubbles: true })); await sleep(450);
+    click(W, '#slack-subtabs .subtab[data-ssub="workflows"]'); await M.settle(150);
+    ok = eq("configured + discovered workflows", $("#slack-wf-body .guru-row").length, 2, notes) && ok;
+    ok = truthy("configured entry labeled", /Escalation intake/.test(W.document.getElementById("slack-wf-body").textContent), notes) && ok;
+    ok = truthy("bookmark entry discovered (non-workflow link filtered)", /PTO request/.test(W.document.getElementById("slack-wf-body").textContent) && !/Docs/.test(W.document.getElementById("slack-wf-body").textContent), notes) && ok;
+    ok = truthy("launch links live", [...$("#slack-wf-body a.srow-open")].length === 2, notes) && ok;
+    return ok;
+  }],
+
+  ["S21 Guru polish: designed empty states, SVG browse rows, crumb hit targets", async (notes) => {
+    const W = await boot(baseCfg());
+    const M = W.__mock;
+    const $ = s => W.document.querySelectorAll(s);
+    click(W, '.tab[data-pane="guru"]'); await M.settle();
+    click(W, '#guru-subtabs .subtab[data-gsub="search"]'); await M.settle();
+    let ok = truthy("search idle uses designed empty state", $("#guru-search-body .empty-state").length === 1, notes);
+    click(W, '#guru-subtabs .subtab[data-gsub="browse"]'); await M.settle();
+    ok = truthy("browse rows carry SVG glyph", $("#guru-browse-body .guru-row-ic svg").length >= 2, notes) && ok;
+    ok = truthy("browse rows carry drill affordance", $("#guru-browse-body .guru-row-drill").length >= 2, notes) && ok;
+    const crumb = W.document.querySelector(".guru-crumb");
+    ok = truthy("crumb hit target ≥ 24px", crumb && crumb.offsetHeight >= 24, notes) && ok;
+    click(W, '#guru-subtabs .subtab[data-gsub="recents"]'); await M.settle();
+    ok = truthy("recents empty uses designed empty state", $("#guru-recents-body .empty-state").length === 1, notes) && ok;
+    ok = truthy("no emoji glyphs left in Guru pane", !/[🗂📁📄]/.test(W.document.getElementById("pane-guru").innerHTML), notes) && ok;
+    return ok;
+  }],
+
+  ["S22 Slack mrkdwn rendering: bold/emoji formatted; hostile content stays escaped", async (notes) => {
+    const W = await boot(baseCfg());
+    const M = W.__mock;
+    click(W, '.tab[data-pane="slack"]'); await M.settle(150);
+    const title = W.document.querySelector("#slack-list .spost-title");
+    let ok = truthy("demo post rendered", !!title, notes);
+    ok = truthy("bold renders as <strong>", title && title.querySelector("strong"), notes) && ok;
+    ok = truthy("emoji shortcode replaced", title && title.textContent.indexOf(":rotating_light:") === -1 && /🚨/.test(title.textContent), notes) && ok;
+    ok = truthy("no raw asterisks in title", title && title.textContent.indexOf("*") === -1, notes) && ok;
+    // escaping: post hostile content through the real composer path (demo store)
+    W.document.getElementById("slack-title").value = "probe";
+    W.document.getElementById("slack-text").value = '<img src=x onerror=window.__pwned=1> and <https://x.test/a?b=1&c=2|a link>';
+    click(W, "#slack-post"); await M.settle(150);
+    const body = W.document.querySelector("#slack-list .spost-text");
+    ok = truthy("hostile img never became an element", body && !body.querySelector("img") && !W.__pwned, notes) && ok;
+    ok = truthy("slack link syntax became a safe anchor", body && [...body.querySelectorAll("a")].some(a => a.textContent === "a link" && /b=1&c=2/.test(a.href)), notes) && ok;
+    return ok;
+  }],
+
+  ["S23 Slack requests (demo): ticket-scoped rows, open/resolved state, unread bell, mark-resolved, thread expand", async (notes) => {
+    const W = await boot(baseCfg());
+    const M = W.__mock;
+    const $ = s => W.document.querySelectorAll(s);
+    click(W, '.tab[data-pane="slack"]'); await M.settle();
+    click(W, '#slack-subtabs .subtab[data-ssub="workflows"]'); await M.settle(150);
+    let ok = eq("three sample requests", $("#slack-req-body .spost").length, 3, notes);
+    ok = eq("ticket heading bound", W.document.getElementById("slack-req-ticket").textContent, "12345", notes) && ok;
+    ok = eq("open count pill", W.document.getElementById("slack-req-count").textContent, "2 open", notes) && ok;
+    ok = truthy("state badges present", [...$("#slack-req-body .gv-badge")].some(b => /open/.test(b.textContent)) && [...$("#slack-req-body .gv-badge")].some(b => /resolved/.test(b.textContent)), notes) && ok;
+    ok = truthy("unread bell on the replied request", $("#slack-req-body .abell").length >= 1, notes) && ok;
+    // expand the unread thread → replies render, bell clears, seen persisted
+    const tog = W.document.querySelector('#slack-req-body .atask-toggle[data-slack-ts]');
+    tog.click(); await M.settle(150);
+    ok = truthy("thread replies render", tog.nextElementSibling.querySelectorAll(".cmt").length >= 2, notes) && ok;
+    ok = truthy("bell cleared after reading", tog.closest(".spost").querySelectorAll(".abell").length === 0, notes) && ok;
+    ok = truthy("seen map persisted", (W.localStorage.getItem("cxsidebar.slack.seen") || "").length > 2, notes) && ok;
+    // mark an open request resolved (demo flips in place)
+    const res = W.document.querySelector("#slack-req-body [data-slack-resolve]");
+    res.click(); await M.settle(80);
+    ok = eq("open count drops", W.document.getElementById("slack-req-count").textContent, "1 open", notes) && ok;
+    // demo request search filters samples
+    const si = W.document.getElementById("slack-req-search");
+    si.value = "refund"; si.dispatchEvent(new W.Event("input", { bubbles: true }));
+    await sleep(500);
+    ok = eq("request search narrows", $("#slack-req-body .spost").length, 1, notes) && ok;
+    si.value = ""; si.dispatchEvent(new W.Event("input", { bubbles: true })); await sleep(500);
+    return ok;
+  }],
+
+  ["S24 Slack requests (live shapes): blocks-aware match, reaction + reply resolution, search fallback sweep", async (notes) => {
+    const W = await boot(baseCfg({ settings: { slack_channel_id: "C123", aht_field_map: MAP } }));
+    const M = W.__mock;
+    const $ = s => W.document.querySelectorAll(s);
+    const isSlack = (m) => r => r.url === "https://slack.com/api/" + m;
+    M.respondNext(isSlack("auth.test"), { ok: true, team_id: "T777", url: "https://t777.slack.com/" });
+    // history: one blocks-only workflow submission (ticket in a field), one ✅-reacted
+    // (resolved by reaction), one replied (resolved by ✅ reply), one other-ticket (filtered out).
+    // Queued twice: the Post view's marker scan consumes one before the requests loader runs.
+    const HISTORY = { ok: true, messages: [
+      { ts: "300.1", text: "", blocks: [ { type: "section", fields: [ { type: "mrkdwn", text: "*Ticket:*\n#12345" }, { type: "mrkdwn", text: "*Urgency:*\nHigh" } ] } ], reply_count: 0 },
+      { ts: "200.1", text: "escalation done · [Ticket #12345]", reactions: [ { name: "white_check_mark", count: 1 } ], reply_count: 0 },
+      { ts: "100.1", text: "please review [Ticket #12345]", reply_count: 2, latest_reply: "150.1" },
+      { ts: "90.1", text: "[Ticket #99999] unrelated", reply_count: 0 }
+    ] };
+    M.respondNext(isSlack("conversations.history"), HISTORY);
+    M.respondNext(isSlack("conversations.history"), HISTORY);
+    M.respondNext(isSlack("conversations.replies"), { ok: true, messages: [
+      { ts: "100.1", text: "please review [Ticket #12345]" },
+      { ts: "120.1", text: "looking now" },
+      { ts: "150.1", text: "✅ resolved — credit issued" }
+    ] });
+    click(W, '.tab[data-pane="slack"]'); await M.settle();
+    click(W, '#slack-subtabs .subtab[data-ssub="workflows"]'); await M.settle(250);
+    let ok = eq("three rows for this ticket (other ticket filtered)", $("#slack-req-body .spost").length, 3, notes);
+    ok = eq("blocks-only submission matched + one open", W.document.getElementById("slack-req-count").textContent, "1 open", notes) && ok;
+    ok = eq("two resolved (reaction + reply)", [...$("#slack-req-body .gv-badge")].filter(b => /resolved/.test(b.textContent)).length, 2, notes) && ok;
+    ok = truthy("permalink built from team url", [...$('#slack-req-body a')].some(a => /t777\.slack\.com\/archives\/C123\/p3001$/.test(a.href)), notes) && ok;
+    // keyword search: search.messages fails (no token) → history fallback sweep
+    M.failNext(isSlack("search.messages"), 1, 500);
+    M.respondNext(isSlack("conversations.history"), { ok: true, messages: [
+      { ts: "300.1", text: "duplicate charge follow-up [Ticket #12345]", reply_count: 0 },
+      { ts: "10.1", text: "unrelated chatter", reply_count: 0 }
+    ] });
+    const si = W.document.getElementById("slack-req-search");
+    si.value = "duplicate"; si.dispatchEvent(new W.Event("input", { bubbles: true }));
+    await sleep(600);
+    ok = eq("fallback sweep returns the match", $("#slack-req-body .spost").length, 1, notes) && ok;
+    ok = truthy("labeled as history sweep", /history sweep/i.test(W.document.getElementById("slack-req-body").parentNode.textContent), notes) && ok;
+    return ok;
+  }],
+];
+
+(async function run() {
+  const table = document.getElementById("results");
+  for (let i = 0; i < scenarios.length; i++) {
+    const [name, fn] = scenarios[i];
+    const notes = [];
+    let pass = false, err = "";
+    try { pass = await fn(notes); }
+    catch (e) { err = String(e && e.stack || e); }
+    results.push({ name, pass, notes, err });
+    const tr = document.createElement("tr");
+    tr.innerHTML = "<td>" + (i + 1) + "</td><td>" + name + "</td><td class='" + (pass ? "pass'>PASS" : "fail'>FAIL") + "</td><td><pre>" +
+      notes.join("\n") + (err ? "\nERROR: " + err : "") + "</pre></td>";
+    table.appendChild(tr);
+  }
+  const passed = results.filter(r => r.pass).length;
+  document.getElementById("status").textContent = "Done: " + passed + "/" + results.length + " passed";
+  window.__harnessResults = { passed, total: results.length, results };
+})();
+</script>
+</body>
+</html>

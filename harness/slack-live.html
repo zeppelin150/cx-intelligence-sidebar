@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <title>Slack live sandbox — app under test</title>
+  <!-- LOCAL TESTING ONLY. Loads the real v2.9.2 assets over a mock ZAF whose
+       slack.com requests go out for real, with a token supplied at runtime via
+       the URL hash — no token, workspace id or channel id lives in this file,
+       and nothing here ships with the app.
+
+       Open as:  slack-live.html#{"bot":"xoxb-…","user":"xoxp-…","channel":"C…",
+                                  "channels":"C1:label,C2","workflows":"Label|https://…"}
+         bot       token used for every Slack call (posting, channels, bookmarks)
+         user      optional; routed ONLY to stars.list so real Slack favorites
+                   light up (stars:read is a user-token scope)
+         channel   posting channel for the Post sub-tab (blank = demo mode)
+         channels  optional slack_channel_ids value (bookmark discovery targets)
+         workflows optional slack_workflow_links value
+       The hash never leaves the browser; strip it before sharing a URL. -->
+  <link rel="stylesheet" href="../v2.9.2/cx-client-data-sidebar-v2.9.0/assets/app.css?v=390" />
+  <style>
+    .livebar { position: sticky; top: 0; z-index: 99; display: flex; gap: 8px; align-items: center;
+      padding: 7px 12px; background: #111; color: #fff; font: 12px system-ui; }
+    .livebar b { color: #7fd4b5; }
+    .livebar .st { flex: 1; text-align: right; opacity: .8; }
+  </style>
+</head>
+<body>
+  <div class="livebar"><span>Slack <b>live</b> sandbox</span><span>· real slack.com calls, token from URL hash</span><span class="st" id="live-status">no token</span></div>
+  <script>
+  (function () {
+    var cfg = {};
+    try { cfg = JSON.parse(decodeURIComponent(location.hash.slice(1)) || "{}"); } catch (e) {}
+    var BOT = cfg.bot || "", USER = cfg.user || "";
+    var status = function (t) { document.getElementById("live-status").textContent = t; };
+    if (BOT) status("token loaded · channel " + (cfg.channel || "(demo)"));
+
+    // Real Slack call: token rides in the form body (a CORS "simple request",
+    // the browser-supported pattern for Slack's Web API — no preflight).
+    function realSlack(url, formBody, token) {
+      var body = (formBody ? formBody + "&" : "") + "token=" + encodeURIComponent(token);
+      return fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body
+      }).then(function (r) { return r.json(); });
+    }
+
+    var nowISO = new Date().toISOString();
+    window.ZAFClient = { init: function () { return {
+      on: function () {}, off: function () {},
+      get: function (paths) {
+        var arr = Array.isArray(paths) ? paths : [paths];
+        var out = {};
+        arr.forEach(function (p) {
+          out[p] = p === "ticket.id" ? 4242
+            : p === "ticket.requester.id" ? 777
+            : p === "ticket.requester.email" ? "member@example.test"
+            : p === "ticket.subject" ? "Live sandbox ticket"
+            : p === "ticket.tags" ? []
+            : p === "currentUser.role" ? "agent"
+            : p === "currentUser.email" ? "agent@example.test"
+            : "";
+        });
+        return Promise.resolve(out);
+      },
+      set: function () { return Promise.resolve({}); },
+      invoke: function () { return Promise.resolve({}); },
+      context: function () { return Promise.resolve({ account: { subdomain: "sandbox" } }); },
+      metadata: function () { return Promise.resolve({ settings: {
+        slack_channel_id: cfg.channel || "",
+        slack_channel_ids: cfg.channels || "",
+        slack_workflow_links: cfg.workflows || ""
+      } }); },
+      request: function (req) {
+        var url = String(req.url || "");
+        if (url.indexOf("https://slack.com/api/") === 0) {
+          if (!BOT) return Promise.reject({ message: "no token in the URL hash" });
+          // stars.list + search.messages are user-token APIs; route them to the
+          // user token when provided (in production: slack_search_token).
+          var tok = (USER && /\/(stars\.list|search\.messages)$/.test(url)) ? USER : BOT;
+          return realSlack(url, typeof req.data === "string" ? req.data : "", tok);
+        }
+        if (url.indexOf("/api/v2/users/") === 0) return Promise.resolve({ user: {
+          name: "Jordan Sample", email: "member@example.test", role: "end-user",
+          last_login_at: nowISO, created_at: nowISO, tags: [] } });
+        if (url.indexOf("/api/v2/") === 0) return Promise.resolve({});
+        return Promise.resolve({});
+      }
+    }; } };
+
+    // Pull the shipped DOM, then the shipped app.js (same pattern as apptest.html).
+    (async function () {
+      var res = await fetch("../v2.9.2/cx-client-data-sidebar-v2.9.0/assets/index.html?v=390", { cache: "no-cache" });
+      var doc = new DOMParser().parseFromString(await res.text(), "text/html");
+      document.body.insertAdjacentHTML("beforeend", doc.body.innerHTML);
+      var s = document.createElement("script");
+      s.src = "../v2.9.2/cx-client-data-sidebar-v2.9.0/assets/app.js?v=390";
+      s.onload = function () {
+        window.__appLoaded = true;
+        var slackTab = document.querySelector('.tab[data-pane="slack"]');
+        if (slackTab) slackTab.click();
+        // Optional cfg.view: post | channels | workflows — walk to a sub-tab
+        // (used by headless screenshot runs). cfg.q types into channel search.
+        if (cfg.view && cfg.view !== "post") setTimeout(function () {
+          var st = document.querySelector('#slack-subtabs .subtab[data-ssub="' + cfg.view + '"]');
+          if (st) st.click();
+          if (cfg.q) setTimeout(function () {
+            var si = document.getElementById("slack-ch-search");
+            if (si) { si.value = cfg.q; si.dispatchEvent(new Event("input", { bubbles: true })); }
+          }, 600);
+          if (cfg.wfq) setTimeout(function () {
+            var si = document.getElementById("slack-req-search");
+            if (si) { si.value = cfg.wfq; si.dispatchEvent(new Event("input", { bubbles: true })); }
+          }, 1800);
+        }, 500);
+      };
+      document.body.appendChild(s);
+    })();
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,444 @@
+﻿<title>Pilot Load Readout</title>
+<style>
+  :root {
+    --paper: #F7F9F8;
+    --card: #FFFFFF;
+    --ink: #16241F;
+    --ink-2: #4A5B54;
+    --ink-3: #7A8A83;
+    --accent: #1F4D45;
+    --accent-ink: #1F4D45;
+    --rule: #DDE5E1;
+    --rule-soft: #E9EFEC;
+    --s1: #2E8F67;   /* series A (validated) */
+    --s2: #4A6FB5;   /* series B (validated) */
+    --ok: #2E7D4F;
+    --ok-bg: #E7F2EB;
+    --warn: #9A6B00;
+    --warn-bg: #F7EFDB;
+    --crit: #B3261E;
+    --crit-bg: #F9E7E5;
+    --grid: #E4EAE7;
+    --tip-bg: #16241F;
+    --tip-ink: #F7F9F8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #101816;
+      --card: #18221E;
+      --ink: #E6EEE9;
+      --ink-2: #A7B8B0;
+      --ink-3: #74857D;
+      --accent: #8FBFAD;
+      --accent-ink: #A9CFBF;
+      --rule: #2A3833;
+      --rule-soft: #22302A;
+      --s1: #4FA57E;
+      --s2: #5D86D1;
+      --ok: #6FBF8F;
+      --ok-bg: #1C3226;
+      --warn: #D9A94A;
+      --warn-bg: #33290F;
+      --crit: #E07A72;
+      --crit-bg: #3A1F1C;
+      --grid: #24322C;
+      --tip-bg: #E6EEE9;
+      --tip-ink: #101816;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #101816;
+    --card: #18221E;
+    --ink: #E6EEE9;
+    --ink-2: #A7B8B0;
+    --ink-3: #74857D;
+    --accent: #8FBFAD;
+    --accent-ink: #A9CFBF;
+    --rule: #2A3833;
+    --rule-soft: #22302A;
+    --s1: #4FA57E;
+    --s2: #5D86D1;
+    --ok: #6FBF8F;
+    --ok-bg: #1C3226;
+    --warn: #D9A94A;
+    --warn-bg: #33290F;
+    --crit: #E07A72;
+    --crit-bg: #3A1F1C;
+    --grid: #24322C;
+    --tip-bg: #E6EEE9;
+    --tip-ink: #101816;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.6 -apple-system, "Segoe UI", system-ui, Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 48px 24px 96px; }
+  .serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+  .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+  header { border-bottom: 3px solid var(--accent); padding-bottom: 28px; margin-bottom: 36px; }
+  .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px; }
+  .eyebrow b { color: var(--accent-ink); font-weight: 600; }
+  h1 { font-size: clamp(34px, 5vw, 46px); line-height: 1.08; margin: 0 0 14px; font-weight: 600; text-wrap: balance; }
+  .dek { font-size: 18px; color: var(--ink-2); max-width: 64ch; margin: 0; }
+
+  h2 { font-size: 24px; margin: 56px 0 6px; font-weight: 600; text-wrap: balance; }
+  h2 .no { color: var(--ink-3); font-weight: 400; margin-right: 8px; }
+  .lede { color: var(--ink-2); max-width: 68ch; margin: 0 0 20px; }
+  p { max-width: 68ch; }
+  section > p { color: var(--ink); }
+  a { color: var(--accent-ink); }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; background: var(--rule-soft); padding: 1px 5px; border-radius: 3px; }
+
+  /* verdict tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin: 28px 0 0; }
+  .tile { background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px 14px; display: flex; flex-direction: column; gap: 2px; }
+  .tile .k { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .tile .v { font-size: 30px; font-weight: 650; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .tile .d { font-size: 13px; color: var(--ink-2); }
+
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; vertical-align: 2px; }
+  .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .chip.over { color: var(--crit); background: var(--crit-bg); }
+  .chip.warn { color: var(--warn); background: var(--warn-bg); }
+  .chip.ok   { color: var(--ok);   background: var(--ok-bg); }
+  .chip.info { color: var(--ink-2); background: var(--rule-soft); }
+
+  .card { background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 22px 22px 18px; margin: 20px 0; }
+  .card h3 { margin: 0 0 2px; font-size: 15px; font-weight: 650; }
+  .card .sub { font-size: 13px; color: var(--ink-3); margin: 0 0 16px; }
+
+  figure { margin: 0; }
+  .chart { width: 100%; overflow-x: auto; }
+  .chart svg { display: block; }
+  figcaption { font-size: 12.5px; color: var(--ink-3); margin-top: 10px; max-width: 72ch; }
+
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); margin: 0 0 12px; }
+  .legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  .tablewrap { overflow-x: auto; }
+  th { text-align: left; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule); }
+  td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+  tr:last-child td { border-bottom: none; }
+
+  .callout { border-left: 3px solid var(--accent); background: var(--card); border-radius: 0 6px 6px 0; padding: 14px 18px; margin: 22px 0; max-width: 74ch; }
+  .callout p { margin: 0; }
+
+  ul { max-width: 70ch; padding-left: 22px; }
+  li { margin-bottom: 8px; }
+  li::marker { color: var(--accent-ink); }
+
+  #tip { position: fixed; pointer-events: none; background: var(--tip-bg); color: var(--tip-ink);
+    font: 12px/1.45 ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums;
+    padding: 6px 9px; border-radius: 4px; opacity: 0; transition: opacity .08s; z-index: 10; max-width: 260px; }
+  @media (prefers-reduced-motion: reduce) { #tip { transition: none; } }
+
+  footer { margin-top: 72px; padding-top: 18px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-3); }
+  footer .mono { font-size: 12px; }
+</style>
+
+<div class="wrap">
+<header>
+  <p class="eyebrow"><b>CX Intelligence Sidebar</b> Â· app 3.9.0 Â· 70-agent pilot profile Â· 2026-08-16</p>
+  <h1 class="serif">Pilot Load Readout</h1>
+  <p class="dek">What 70 agents working 10 tickets an hour do to every API rate cap the sidebar touches â€” measured by replaying the app's real call profile offline, with zero requests sent to any live instance â€” plus the 3.9 supply-chain audit.</p>
+  <div class="tiles">
+    <div class="tile"><span class="k">Asana, one shared PAT</span><span class="v mono" style="color:var(--crit)">762<span style="font-size:16px;color:var(--ink-3)"> /min</span></span><span class="d">5.4Ã— the free-tier cap (150) â€” <span class="chip over">over</span></span></div>
+    <div class="tile"><span class="k">Same fleet, pollers gated</span><span class="v mono" style="color:var(--ok)">65<span style="font-size:16px;color:var(--ink-3)"> /min</span></span><span class="d">the one-line-of-gating fix, 12Ã— lower</span></div>
+    <div class="tile"><span class="k">Slack history, shared token</span><span class="v mono" style="color:var(--warn)">98%<span style="font-size:16px;color:var(--ink-3)"> of cap</span></span><span class="d">rides Tier-3 (50/min) at p95 â€” <span class="chip warn">warn</span></span></div>
+    <div class="tile"><span class="k">Shipped-code vulnerabilities</span><span class="v mono">0</span><span class="d">bundle is dependency-free; findings live in tooling</span></div>
+  </div>
+</header>
+
+<section>
+  <h2 class="serif">The structural finding: two ungated pollers</h2>
+  <p class="lede">Almost all of the sidebar's traffic is well-behaved â€” cached per ticket, debounced, or gated on visibility. Two timers are the exception, and they dominate everything else combined.</p>
+  <p><b>The home badge poll</b> (<span class="mono">home.js:198â€“219</span>) fires one Asana <code>stories</code> request per task card every 30 seconds with no <code>document.hidden</code> gate, no pane gate, and no shutdown. Because the nav-bar iframe persists once opened, an agent's <em>first</em> home check of the day starts a permanent ~10 req/min drain. Checking home "twice an hour" costs almost nothing per check â€” the first check costs everything thereafter. <b>The ticket-sidebar badge poll</b> (<span class="mono">app.js:1442â€“1512</span>) repeats the pattern per open ticket tab.</p>
+  <p>Every Asana request from all 70 agents draws on <b>one shared PAT bucket</b>: 150 req/min on a free Asana workspace, 1,500 on paid, with a separate 60/min bucket for search endpoints. The fleet's steady state:</p>
+
+  <div class="card">
+    <h3>Minute-peak (p95) as a share of each shared cap</h3>
+    <p class="sub">Steady-state hour Â· Slack live Â· 200 seeded runs Â· dashed line = the cap itself</p>
+    <figure><div class="chart" id="capbars"></div>
+    <figcaption>Guru is excluded here â€” it publishes no numeric limit (verified); the fleet generates ~29 req/min against it, reported for monitoring only.</figcaption></figure>
+  </div>
+
+  <div class="card">
+    <h3>Morning burst â€” all 70 agents start between 9:00 and 9:10</h3>
+    <p class="sub">First-hour peaks. Boot fan-outs collide: home opens fire 8 Asana searches each.</p>
+    <figure><div class="chart" id="burstbars"></div>
+    <figcaption>Two caps that survive steady state fail the burst: Asana search (p95 133 vs 60) and Slack history (p95 116 vs 50). Staggering logins or lazy-loading the home pane spreads this out.</figcaption></figure>
+  </div>
+
+  <div class="tablewrap card">
+    <h3>Full steady-state table</h3>
+    <p class="sub">All shared buckets, 70 agents, Slack-live scenario</p>
+    <table>
+      <thead><tr><th>Channel</th><th class="num">mean/min</th><th class="num">peak p95</th><th class="num">peak max</th><th class="num">cap/min</th><th class="num">p95 % cap</th><th>Status</th></tr></thead>
+      <tbody id="fulltable"></tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2 class="serif">The fix, quantified</h2>
+  <p class="lede">Gate both Asana pollers exactly the way <code>slackSyncTick</code> already is â€” skip the tick unless the page is visible and the pane is active.</p>
+  <div class="card">
+    <h3>Fleet Asana load, before and after gating</h3>
+    <p class="sub">Same 70 agents, same behavior model â€” only the poller gates change</p>
+    <div class="legend"><span><span class="sw" style="background:var(--s2)"></span>Ungated (as shipped)</span><span><span class="sw" style="background:var(--s1)"></span>Gated (proposed)</span></div>
+    <figure><div class="chart" id="fixbars"></div>
+    <figcaption>Gated p95 is 125/min against the free-tier 150 â€” tight but survivable even on a free Asana workspace, and trivial on paid. Ungated, the free tier saturates in the first hour of the pilot.</figcaption></figure>
+  </div>
+  <div class="callout"><p><b>If the Asana workspace is on the free tier, this fix is a launch blocker, not an optimization.</b> On a paid workspace (1,500/min) the ungated app fits at 54% of cap â€” confirm the tier before week 1.</p></div>
+</section>
+
+<section>
+  <h2 class="serif">The tier-fit configuration</h2>
+  <p class="lede">Design exploration converged on a configuration that fits <b>every vendor's conservative tier at once</b> â€” one free-tier Asana PAT, one Slack bot token at published method tiers, Zendesk's non-scaling caps â€” at the real fleet shape of <b>15 open Asana tasks per agent</b> (where the as-shipped pollers would generate 2,272 req/min, over even the paid Asana cap).</p>
+  <div class="card">
+    <h3>Four changes, all caps green</h3>
+    <p class="sub">70 agents Â· 15 tasks each Â· steady-state p95 vs each binding cap Â· 200 seeds</p>
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th>Change</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td>Daily background update, per-agent spread</td><td>Each agent's home task list rebuilds once a day at a personal slot â€” never in synchronized groups (a group of 20 Ã— 15 tasks = 300 calls in one minute, 2â€“3Ã— any cap). Manual per-card refresh carries freshness.</td></tr>
+        <tr><td>Gate the sidebar 30 s poll</td><td>Visibility + pane-active check, mirroring <code>slackSyncTick</code>; also retires the poll's force-reopen side effect.</td></tr>
+        <tr><td>Lazy home boot</td><td>First open renders cached data â€” no 15-story sweep, no 8-search rebuild. Kills the 9 am burst breach.</td></tr>
+        <tr><td>Slack economies</td><td>2 scoped channels, 60 s sync tick, home double-sweep collapsed to one.</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <div class="tablewrap card">
+    <h3>Where each budget lands</h3>
+    <p class="sub">steady-state p95 vs the binding cap</p>
+    <table>
+      <thead><tr><th>Budget</th><th class="num">p95</th><th class="num">cap</th><th class="num">% used</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Asana total (one free PAT)</td><td class="num">119</td><td class="num">150</td><td class="num">79%</td><td><span class="chip ok">ok</span></td></tr>
+        <tr><td>Asana search endpoints</td><td class="num">39</td><td class="num">60</td><td class="num">65%</td><td><span class="chip ok">ok</span></td></tr>
+        <tr><td>Slack conversations.history (Tier 3)</td><td class="num">32</td><td class="num">50</td><td class="num">64%</td><td><span class="chip ok">ok</span></td></tr>
+        <tr><td>Guru (no published cap)</td><td class="num">59</td><td class="num">â€”</td><td class="num">â€”</td><td><span class="chip info">self-budget 60</span></td></tr>
+        <tr><td>Zendesk account (plan 2,500)</td><td class="num">281</td><td class="num">2500</td><td class="num">11%</td><td><span class="chip ok">ok</span></td></tr>
+        <tr><td>Zendesk ticket-updates sublimit</td><td class="num">40</td><td class="num">100</td><td class="num">40%</td><td><span class="chip ok">ok</span></td></tr>
+        <tr><td>Per-agent framework (1-min / 5-min)</td><td class="num">49 / 102</td><td class="num">100 / 700</td><td class="num">49% / 15%</td><td><span class="chip ok">ok</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Residuals: the worst-case synchronized 9 am burst leaves Slack history at p95 55/50 â€” lazy-load the home Slack tabs the same way as Asana (or accept the brief self-healing 429 brush); growth headroom is ~90 agents before the structural redesign (one <code>modified_at</code> list call per sweep instead of per-task stories â€” cost independent of task and agent count) becomes the answer.</p>
+</section>
+
+<section>
+  <h2 class="serif">An hour in the life, minute by minute</h2>
+  <p class="lede">One seeded steady-state run. Hover for values.</p>
+  <div class="card"><h3>Asana â€” all endpoints, one shared PAT</h3><p class="sub">free cap 150 far below the line; paid cap 1,500 far above</p><figure><div class="chart" id="ts-asana"></div></figure></div>
+  <div class="card"><h3>Slack â€” conversations.history, shared bot token</h3><p class="sub">Tier-3 cap 50/min Â· single noisy bucket, p95 rides at 98%</p><figure><div class="chart" id="ts-slack"></div></figure></div>
+  <div class="card"><h3>Zendesk â€” all REST incl. AHT writes, account-wide</h3><p class="sub">Enterprise cap 700/min Â· would breach a Team-plan 200/min cap at peaks</p><figure><div class="chart" id="ts-zendesk"></div></figure></div>
+  <p>Per-agent budgets are comfortable throughout: framework peak p95 <b class="mono">57/100</b> per minute and <b class="mono">155/700</b> per 5 minutes; AHT ticket updates max <b class="mono">5</b> of 30 per agent+ticket per 10 min. <b>The AHT telemetry design is safe</b> â€” the pollers, not the writes, are the problem.</p>
+</section>
+
+<section>
+  <h2 class="serif">Rate-limit facts, re-verified</h2>
+  <p class="lede">Every cap above was checked against vendor docs on 2026-08-16. Two findings correct assumptions in <span class="mono">THREAT_MODEL.md</span>:</p>
+  <ul>
+    <li><b>Slack's 1-req/min cliff does not apply to us.</b> The May-2025 restriction targets commercially distributed non-Marketplace apps; Slack states internal customer-built apps are unaffected and keep Tier 3 (50/min). This resolves the pilot plan's week-2 gate in our favor.</li>
+    <li><b>Zendesk has a second per-agent cap the model missed:</b> 700 requests per 5 minutes per user per app, alongside the 100/min client cap â€” plus an account-wide 100 ticket-updates/min sublimit (the sim tracks all three).</li>
+    <li>Whether proxied vendor calls count against the framework 100/min is <b>undocumented</b>; the sim takes the conservative reading. Trial/sandbox accounts publish no rate limit â€” read the <code>x-rate-limit</code> headers on the dev sandbox empirically.</li>
+    <li>Guru publishes no numeric limits at all (verified absence) â€” monitor 429s, don't hardcode a guess.</li>
+    <li><b>Zendesk Search has its own budget</b> â€” <code>search.json</code> responses carry a dedicated <code>Zendesk-RateLimit-search-index</code> header (no published number) plus a 1,000-results-per-query cap. This app leans on search hard: 4 calls per ticket boot â‰ˆ <b class="mono">47/min</b> fleet-wide. A <span class="mono">zendesk.search</span> channel was added to <span class="mono">api-monitor.js</span> to watch it.</li>
+  </ul>
+  <div class="callout"><p><b>Why simulate instead of load-testing the sandbox:</b> deliberately driving traffic to probe rate limits â€” even on a d3v instance â€” falls under Zendesk MSA Â§2.2 prohibited uses ("attempt to bypass or break anyâ€¦ rate limiting mechanism"), and Zendesk offers no load-test approval channel. The compliant live measurement is passive header/429 observation via <span class="mono">monitoring/api-monitor.js</span> during the pilot (set <code>autoRetry:false</code> on instrumented calls â€” ZAF silently retries 429s).</p></div>
+</section>
+
+<section>
+  <h2 class="serif">Supply chain: 3.9 audit</h2>
+  <p class="lede">Scanned with npm audit (GitHub Advisory DB) and retire.js 5.4.3. Snyk skipped â€” no CLI, no <code>SNYK_TOKEN</code>; it draws on largely the same advisory feeds for npm trees.</p>
+  <p><b>The shipped app has no third-party code to attack.</b> The bundle is hand-written vanilla JS: no npm dependencies, no vendored libraries (signature/banner/minified-blob scan + retire.js clean), and one external script â€” the mandatory Zendesk ZAF SDK. All four token credentials are injected server-side by Zendesk's secure proxy and never reach the browser. Findings live in the tooling around the app:</p>
+  <div class="tablewrap card">
+    <table>
+      <thead><tr><th>Severity</th><th>Where</th><th>Finding</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip over">high</span></td><td>zcli (deploy tool)</td><td><code>adm-zip</code> &lt;0.6.0 â€” crafted ZIP â†’ 4 GB alloc. No upstream fix; used to package our app zip. Self-built zips only â†’ DoS-only in practice.</td><td>Monitor <code>@zendesk/zcli</code> releases; re-audit before each deploy; never feed it foreign zips.</td></tr>
+        <tr><td><span class="chip warn">moderate</span></td><td>zcli (deploy tool)</td><td><code>uuid</code> &lt;11.1.1 buffer bounds â€” vulnerable path unlikely exercised by zcli.</td><td>Same monitoring.</td></tr>
+        <tr><td><span class="chip over">high</span></td><td>brief-docx (doc tooling)</td><td><code>nanoid</code> 4.0.0â€“5.1.15 infinite loop. Local doc builds only.</td><td><code>npm audit fix</code> â€” non-breaking.</td></tr>
+        <tr><td><span class="chip over">high</span></td><td>asana-broker (future)</td><td>pip-audit of the broker's actual venv: <b>7 known vulns</b> â€” <code>cryptography</code> 48.0.0 (fixed â‰¥48.0.1) and <code>starlette</code> 1.2.1 (fixed â‰¥1.3.0). Floor-pinned deps, no lockfile.</td><td>Upgrade both in the venv now; lockfile + pip-audit in CI before the broker ever deploys.</td></tr>
+        <tr><td><span class="chip info">accepted</span></td><td>bundle HTML</td><td>ZAF SDK major-pinned from <span class="mono">static.zdassets.com</span>, no SRI â€” Zendesk's required pattern.</td><td>Accept; platform trust already assumed.</td></tr>
+        <tr><td><span class="chip info">track</span></td><td>bundle data</td><td><code>asana_form_config.json</code> is generated from a live Asana endpoint and ships in the package â€” third-party <em>data</em> input.</td><td>Diff-review on every regeneration.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The heaviest trust surface is the deploy tool itself: <code>@zendesk/zcli</code> 1.0.0-beta.53 carries ~277 packages that execute on this workstation with Zendesk credentials at deploy time. Also worth knowing: a second deployable tree at the repo root targets a <b>different app_id</b> (<legacy-app-id> vs the bundle's <sandbox-app-id>) â€” deploying from the wrong directory ships the stale fork.</p>
+</section>
+
+<section>
+  <h2 class="serif">Method, assumptions, verification</h2>
+  <p>The profile (<span class="mono">monitoring/load-profile.json</span>) maps every network call each interaction fires, extracted from the 3.9 source with file:line refs. The engine (<span class="mono">monitoring/load-sim.js</span>) replays it: Poisson ticket arrivals (10/hr/agent, â‰¤2 concurrent tabs), home checks 2/hr with first-check-boots-forever semantics, pane-visit probabilities, duty-cycled gated pollers, 200 seeded runs per scenario. Fleet-shape assumptions â€” 8 unsolved tickets, 5 home cards, 60% of tickets with ~1.8 linked tasks, 3 Slack channels â€” are marked in the profile; a half-sized variant keeps every OVER verdict OVER.</p>
+  <p><b>Adversarially verified.</b> Three independent checks ran against this work: a code reviewer re-confirmed every profile claim against source (both ungated pollers, the iframe persistence, the boot fan-outs, the single-PUT AHT design â€” all confirmed with line refs); a blind analytic re-derivation reproduced all six steady-state channel means within <b class="mono">Â±6%</b> without reading the engine â€” including the headline: 70 agents Ã— 2 ticks/min Ã— 5 cards = <b class="mono">700/min</b> from the home poller alone; and a completeness critic audited the scans (its two catches â€” the broker venv findings and the Zendesk search budget â€” are incorporated above). One behavioral side-effect surfaced: on new comments the sidebar poll <b>force-reopens the ticket</b> (<span class="mono">app.js:1477â€“1479</span>) from its background timer â€” gate it with the poller.</p>
+  <p>Re-run: <code>node monitoring/load-sim.js --seeds 200</code> Â· variants via <code>--profile</code>, <code>--agents</code>, <code>--asana-tier</code>, <code>--zendesk-plan-cap</code>.</p>
+</section>
+
+<footer>
+  <p>Companion documents in the project: <span class="mono">API_LOAD_SIMULATION.md</span> Â· <span class="mono">SUPPLY_CHAIN_AUDIT.md</span> Â· raw results <span class="mono">monitoring/load-sim-results*.json</span>. Simulation only â€” no traffic was sent to Zendesk, Asana, Slack, or Guru.</p>
+</footer>
+</div>
+
+<div id="tip" role="presentation"></div>
+
+<script>
+(function () {
+  "use strict";
+  var D = {"bars_steady":[{"ch":"asana.TOTAL","mean":761,"p95":812,"max":832,"cap":150,"status":"OVER"},{"ch":"asana.search","mean":18.8,"p95":38,"max":43,"cap":60,"status":"OK"},{"ch":"slack.conversations.history","mean":19,"p95":49,"max":55,"cap":50,"status":"WARN"},{"ch":"slack.bookmarks.list","mean":4.2,"p95":18,"max":24,"cap":50,"status":"OK"},{"ch":"slack.conversations.replies","mean":3.9,"p95":15,"max":19,"cap":50,"status":"OK"},{"ch":"zendesk.TOTAL","mean":145.1,"p95":269,"max":297,"cap":700,"status":"OK"},{"ch":"zendesk.ticketUpdate","mean":21.6,"p95":42,"max":48,"cap":100,"status":"OK"},{"ch":"guru","mean":28.5,"p95":60,"max":77,"cap":null,"status":"NO-LIMIT"}],
+  "bars_burst":[{"ch":"asana.TOTAL","mean":727.7,"p95":866,"max":893,"cap":150,"status":"OVER"},{"ch":"asana.search","mean":27.8,"p95":133,"max":145,"cap":60,"status":"OVER"},{"ch":"slack.conversations.history","mean":26.8,"p95":116,"max":128,"cap":50,"status":"OVER"},{"ch":"zendesk.TOTAL","mean":147,"p95":300,"max":334,"cap":700,"status":"OK"}],
+  "fix":{"ungated":{"mean":761,"p95":812},"gated":{"mean":64.5,"p95":125}},
+  "ts":{"asana":[760,787,784,773,759,754,742,746,746,759,748,745,766,765,765,779,779,782,779,779,792,779,785,780,788,772,777,785,783,779,798,774,802,774,775,781,797,797,792,767,762,780,768,772,764,773,774,773,772,780,787,790,758,790,786,779,779,778,773,786],
+        "slack":[13,16,21,12,24,21,21,4,10,16,31,14,27,27,9,22,15,8,10,15,18,17,11,15,15,26,18,9,12,8,22,26,19,8,18,13,13,29,17,17,11,11,8,22,14,36,11,12,25,23,29,22,14,17,18,12,15,21,25,23],
+        "zendesk":[137,67,134,87,105,90,115,177,100,136,101,142,151,108,217,164,100,115,140,248,208,158,155,151,135,117,106,181,163,171,172,118,193,130,151,197,152,133,195,127,89,145,134,150,105,144,121,128,165,140,208,166,91,139,189,129,182,84,79,168]}};
+
+  var css = function (v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); };
+  var tip = document.getElementById("tip");
+  function showTip(html, x, y) {
+    tip.innerHTML = html; tip.style.opacity = 1;
+    var w = tip.offsetWidth, vw = window.innerWidth;
+    tip.style.left = Math.min(x + 14, vw - w - 10) + "px";
+    tip.style.top = (y + 16) + "px";
+  }
+  function hideTip() { tip.style.opacity = 0; }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function svgEl(w, h) {
+    var s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    s.setAttribute("viewBox", "0 0 " + w + " " + h);
+    s.setAttribute("width", "100%");
+    s.style.minWidth = "560px";
+    return s;
+  }
+  function add(parent, tag, attrs, text) {
+    var e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (text !== undefined) e.textContent = text;
+    parent.appendChild(e); return e;
+  }
+  var MONO = 'ui-monospace, Consolas, monospace';
+  var SANS = '-apple-system, "Segoe UI", system-ui, sans-serif';
+
+  // â”€â”€ % of cap bullet bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  function capBars(elId, rows) {
+    rows = rows.filter(function (r) { return r.cap; });
+    var W = 900, rowH = 40, padL = 232, padR = 130, padT = 26, padB = 8;
+    var H = padT + rows.length * rowH + padB;
+    var axMax = 620; // %
+    var plotW = W - padL - padR;
+    var x = function (pct) { return padL + Math.min(pct, axMax) / axMax * plotW; };
+    var svg = svgEl(W, H);
+    [100, 200, 400, 600].forEach(function (g) {
+      add(svg, "line", { x1: x(g), y1: padT - 8, x2: x(g), y2: H - padB, stroke: g === 100 ? css("--crit") : css("--grid"), "stroke-width": g === 100 ? 1.5 : 1, "stroke-dasharray": g === 100 ? "5 4" : "none" });
+      add(svg, "text", { x: x(g), y: padT - 13, "text-anchor": "middle", "font-size": 11, "font-family": MONO, fill: g === 100 ? css("--crit") : css("--ink-3") }, g === 100 ? "cap" : g + "%");
+    });
+    rows.forEach(function (r, i) {
+      var y = padT + i * rowH + 7, pct = r.p95 / r.cap * 100;
+      var col = r.status === "OVER" ? css("--crit") : r.status === "WARN" ? css("--warn") : css("--s1");
+      add(svg, "text", { x: padL - 12, y: y + 13, "text-anchor": "end", "font-size": 13, "font-family": MONO, fill: css("--ink") }, r.ch);
+      var bw = Math.max(x(pct) - padL, 2);
+      var bar = add(svg, "path", { d: "M" + padL + "," + y + " h" + Math.max(bw - 4, 0) + " a4,4 0 0 1 4,4 v10 a4,4 0 0 1 -4,4 h-" + Math.max(bw - 4, 0) + " z", fill: col });
+      if (pct > axMax) add(svg, "text", { x: x(axMax) + 4, y: y + 13, "font-size": 12, fill: col, "font-family": MONO }, "â†’");
+      add(svg, "text", { x: W - 8, y: y + 13, "text-anchor": "end", "font-size": 12, "font-family": MONO, fill: css("--ink-2") }, r.p95 + "/" + r.cap + " Â· " + Math.round(pct) + "%");
+      bar.style.cursor = "default";
+      bar.addEventListener("mousemove", function (ev) {
+        showTip("<b>" + esc(r.ch) + "</b><br>p95 peak " + r.p95 + "/min Â· max " + r.max + "<br>mean " + r.mean + "/min Â· cap " + r.cap + "/min<br>" + Math.round(pct) + "% of cap Â· " + r.status, ev.clientX, ev.clientY);
+      });
+      bar.addEventListener("mouseleave", hideTip);
+    });
+    document.getElementById(elId).appendChild(svg);
+  }
+  capBars("capbars", D.bars_steady);
+  capBars("burstbars", D.bars_burst);
+
+  // â”€â”€ full table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  var tb = document.getElementById("fulltable");
+  D.bars_steady.forEach(function (r) {
+    var pct = r.cap ? Math.round(r.p95 / r.cap * 100) + "%" : "â€”";
+    var cls = r.status === "OVER" ? "over" : r.status === "WARN" ? "warn" : r.status === "OK" ? "ok" : "info";
+    var tr = document.createElement("tr");
+    tr.innerHTML = "<td class='mono'>" + esc(r.ch) + "</td><td class='num'>" + r.mean + "</td><td class='num'>" + r.p95 + "</td><td class='num'>" + r.max + "</td><td class='num'>" + (r.cap || "â€”") + "</td><td class='num'>" + pct + "</td><td><span class='chip " + cls + "'>" + r.status.toLowerCase() + "</span></td>";
+    tb.appendChild(tr);
+  });
+
+  // â”€â”€ fix pair bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  (function () {
+    var W = 900, H = 150, padL = 150, padR = 40, padT = 14, padB = 26;
+    var groups = [{ k: "mean/min", u: D.fix.ungated.mean, g: D.fix.gated.mean }, { k: "peak p95", u: D.fix.ungated.p95, g: D.fix.gated.p95 }];
+    var maxV = 850, plotW = W - padL - padR;
+    var x = function (v) { return padL + v / maxV * plotW; };
+    var svg = svgEl(W, H);
+    var cap = 150;
+    add(svg, "line", { x1: x(cap), y1: padT - 4, x2: x(cap), y2: H - padB, stroke: css("--crit"), "stroke-width": 1.5, "stroke-dasharray": "5 4" });
+    add(svg, "text", { x: x(cap), y: H - padB + 16, "text-anchor": "middle", "font-size": 11, "font-family": MONO, fill: css("--crit") }, "free cap 150");
+    groups.forEach(function (grp, i) {
+      var y0 = padT + i * 58;
+      add(svg, "text", { x: padL - 12, y: y0 + 24, "text-anchor": "end", "font-size": 13, "font-family": SANS, fill: css("--ink") }, grp.k);
+      [["u", css("--s2"), "ungated"], ["g", css("--s1"), "gated"]].forEach(function (s, j) {
+        var v = grp[s[0]], y = y0 + j * 20;
+        var bw = Math.max(x(v) - padL, 2);
+        var bar = add(svg, "path", { d: "M" + padL + "," + y + " h" + Math.max(bw - 4, 0) + " a4,4 0 0 1 4,4 v8 a4,4 0 0 1 -4,4 h-" + Math.max(bw - 4, 0) + " z", fill: s[1] });
+        add(svg, "text", { x: x(v) + 8, y: y + 12, "font-size": 12, "font-family": MONO, fill: css("--ink-2") }, v + "/min");
+        bar.addEventListener("mousemove", function (ev) { showTip("<b>" + s[2] + "</b> Â· " + grp.k + "<br>" + v + "/min vs free cap 150", ev.clientX, ev.clientY); });
+        bar.addEventListener("mouseleave", hideTip);
+      });
+    });
+    document.getElementById("fixbars").appendChild(svg);
+  })();
+
+  // â”€â”€ time series â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  function tsChart(elId, arr, cap, capLabel, color) {
+    var W = 900, H = 190, padL = 52, padR = 16, padT = 12, padB = 24;
+    var maxV = Math.max(Math.max.apply(null, arr), cap || 0) * 1.12;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var x = function (i) { return padL + i / (arr.length - 1) * plotW; };
+    var y = function (v) { return padT + (1 - v / maxV) * plotH; };
+    var svg = svgEl(W, H);
+    var steps = 4;
+    for (var g = 0; g <= steps; g++) {
+      var gv = Math.round(maxV / steps * g);
+      add(svg, "line", { x1: padL, y1: y(gv), x2: W - padR, y2: y(gv), stroke: css("--grid"), "stroke-width": 1 });
+      add(svg, "text", { x: padL - 8, y: y(gv) + 4, "text-anchor": "end", "font-size": 11, "font-family": MONO, fill: css("--ink-3") }, gv);
+    }
+    [0, 15, 30, 45, 59].forEach(function (m) {
+      add(svg, "text", { x: x(m), y: H - 6, "text-anchor": "middle", "font-size": 11, "font-family": MONO, fill: css("--ink-3") }, "min " + m);
+    });
+    if (cap) {
+      add(svg, "line", { x1: padL, y1: y(cap), x2: W - padR, y2: y(cap), stroke: css("--crit"), "stroke-width": 1.5, "stroke-dasharray": "5 4" });
+      add(svg, "text", { x: W - padR - 4, y: y(cap) - 5, "text-anchor": "end", "font-size": 11, "font-family": MONO, fill: css("--crit") }, capLabel);
+    }
+    var pts = arr.map(function (v, i) { return x(i) + "," + y(v); }).join(" ");
+    add(svg, "polyline", { points: pts, fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round" });
+    add(svg, "circle", { cx: x(arr.length - 1), cy: y(arr[arr.length - 1]), r: 3.5, fill: color });
+    var hover = add(svg, "g", { opacity: 0 });
+    var hLine = add(hover, "line", { y1: padT, y2: H - padB, stroke: css("--ink-3"), "stroke-width": 1 });
+    var hDot = add(hover, "circle", { r: 4, fill: color, stroke: css("--card"), "stroke-width": 2 });
+    var overlay = add(svg, "rect", { x: padL, y: padT, width: plotW, height: plotH, fill: "transparent" });
+    overlay.addEventListener("mousemove", function (ev) {
+      var box = svg.getBoundingClientRect();
+      var frac = (ev.clientX - box.left) / box.width * W;
+      var i = Math.round((frac - padL) / plotW * (arr.length - 1));
+      i = Math.max(0, Math.min(arr.length - 1, i));
+      hover.setAttribute("opacity", 1);
+      hLine.setAttribute("x1", x(i)); hLine.setAttribute("x2", x(i));
+      hDot.setAttribute("cx", x(i)); hDot.setAttribute("cy", y(arr[i]));
+      showTip("minute " + i + " Â· <b>" + arr[i] + "/min</b>" + (cap ? " Â· cap " + cap : ""), ev.clientX, ev.clientY);
+    });
+    overlay.addEventListener("mouseleave", function () { hover.setAttribute("opacity", 0); hideTip(); });
+    document.getElementById(elId).appendChild(svg);
+  }
+  tsChart("ts-asana", D.ts.asana, 150, "free cap 150", css("--s1"));
+  tsChart("ts-slack", D.ts.slack, 50, "Tier-3 cap 50", css("--s1"));
+  tsChart("ts-zendesk", D.ts.zendesk, 700, "Enterprise cap 700", css("--s1"));
+})();
+</script>
